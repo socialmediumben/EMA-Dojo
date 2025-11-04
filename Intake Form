@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Karate Dojo - Student Intake & Waiver</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .waiver-box {
+            height: 200px;
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-y: auto;
+            font-size: 0.875rem;
+            line-height: 1.25rem;
+            color: #475569;
+            margin-top: 0.5rem;
+        }
+        #signature-canvas {
+            border: 2px dashed #cbd5e1;
+            border-radius: 0.5rem;
+            cursor: crosshair;
+            width: 100%;
+            height: auto;
+        }
+        .hidden {
+            display: none;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3b82f6; /* blue-500 */
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        details > summary {
+            cursor: pointer;
+            font-weight: 500;
+            color: #1e293b; /* slate-800 */
+        }
+    </style>
+</head>
+<body class="bg-slate-100 flex items-center justify-center min-h-screen p-4 sm:p-6 lg:p-8">
+
+    <div id="app-container" class="w-full max-w-4xl bg-white p-8 rounded-2xl shadow-lg transition-all duration-500">
+        
+        <!-- Main Application View -->
+        <div id="main-app-view">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-slate-800">Karate Dojo Enrollment</h1>
+                <p class="text-slate-500 mt-2">New Student Intake & Waiver</p>
+            </div>
+
+            <form id="intake-form">
+                <!-- Fieldset is enabled by default now -->
+                <fieldset id="form-fieldset"> 
+                    <div class="mb-8">
+                        <h2 class="text-xl font-semibold text-slate-700 border-b pb-2 mb-4">1. Student/Guardian Information</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label for="first-name" class="block text-sm font-medium text-slate-600 mb-1">Preferred Name</label>
+                                <input type="text" id="first-name" name="first-name" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                            </div>
+                            <div>
+                                <label for="last-name" class="block text-sm font-medium text-slate-600 mb-1">Last Name</label>
+                                <input type="text" id="last-name" name="last-name" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                            </div>
+                             <div>
+                                <label for="legal-name" class="block text-sm font-medium text-slate-600 mb-1">Legal Name <span class="text-slate-400">(If Different)</span></label>
+                                <input type="text" id="legal-name" name="legal-name" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                            </div>
+                             <div>
+                                <label for="birthday" class="block text-sm font-medium text-slate-600 mb-1">Birthday</label>
+                                <input type="date" id="birthday" name="birthday" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                            </div>
+                            <div>
+                                <label for="email" class="block text-sm font-medium text-slate-600 mb-1">Email Address</label>
+                                <input type="email" id="email" name="email" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                            </div>
+                            <div>
+                                <label for="phone" class="block text-sm font-medium text-slate-600 mb-1">Phone Number</label>
+                                <input type="tel" id="phone" name="phone" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Minors Section (Simplified) -->
+                    <div class="mb-8">
+                        <h2 class="text-xl font-semibold text-slate-700 border-b pb-2 mb-4">Minors <span class="text-slate-400 text-base">(If signing for children)</span></h2>
+                        <div id="minors-container">
+                            <!-- Dynamic minor forms will be injected here -->
+                        </div>
+                        <div id="add-minor-button-container" class="mt-4">
+                             <button type="button" id="add-minor-btn" class="bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors duration-300">
+                                Add Minor Student
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Removed Section 2: About You -->
+                    
+                    <div class="mb-8">
+                        <h2 class="text-xl font-semibold text-slate-700 border-b pb-2 mb-4">2. Dojo Waiver & Agreement</h2>
+                        <details>
+                            <summary class="text-blue-600 hover:underline">Click to Read Activity Waiver & Photo Release</summary>
+                            <div class="waiver-box">
+                                <strong>KARATE DOJO WAIVER AND RELEASE OF LIABILITY AGREEMENT</strong><br><br>
+                                <strong>ACKNOWLEDGEMENT OF RISK:</strong><br>
+                                I hereby acknowledge that participation in martial arts, including but not limited to, Karate, involves inherent risks of injury, including serious injury and death. These risks include, but are not limited to, those related to physical contact, sparring, falls, training techniques, and use of equipment.<br><br>
+                                <strong>ASSUMPTION OF RISK:</strong><br>
+                                I voluntarily agree to assume all risks and responsibility for any injury, illness, damage, or loss sustained by myself (and/or the minor participant listed below) as a result of participation in any activity or class offered by the Dojo, regardless of the severity.<br><br>
+                                <strong>RELEASE OF LIABILITY:</strong><br>
+                                I, for myself (and/or the minor participant), my heirs, executors, and assigns, forever release, waive, and discharge [Dojo Name] and its instructors, employees, and agents from any and all liability, claims, demands, actions, or causes of action arising out of any loss, damage, or injury, including death, that may be sustained by me or the minor participant while participating in or while on the premises of the Dojo, *notwithstanding any negligence on the part of the Dojo*.<br><br>
+                                <strong>PHOTO/VIDEO RELEASE:</strong><br>
+                                I grant the Dojo permission to take and use photographs, video recordings, or other images of me (and/or the minor participant) for promotional, marketing, or training purposes without further compensation.<br><br>
+                                <strong>GOVERNING LAW:</strong><br>
+                                This agreement shall be governed by the laws of the State of [Your State].<br><br>
+                                IN WITNESS WHEREOF, I have executed this Waiver and Release on the date of signature below.
+                            </div>
+                        </details>
+                        <div class="mt-4">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="agree-waiver" name="agree-waiver" required class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="ml-2 text-sm text-slate-700">I have read and agree to the terms for myself and any listed minors.</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="mb-8">
+                        <h2 class="text-xl font-semibold text-slate-700 border-b pb-2 mb-4">3. Signature</h2>
+                        <div class="bg-slate-50 p-2 rounded-lg">
+                            <canvas id="signature-canvas"></canvas>
+                        </div>
+                        <button type="button" id="clear-signature-btn" class="mt-2 text-sm text-blue-600 hover:underline">Clear Signature</button>
+                    </div>
+
+                    <div class="mt-8 text-center">
+                        <button type="submit" id="submit-btn" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition-colors duration-300 focus:outline-none focus:ring-4 focus:ring-blue-300 disabled:bg-slate-400 disabled:cursor-not-allowed">
+                            Agree & Submit Waiver
+                        </button>
+                    </div>
+                </fieldset>
+            </form>
+
+            <div id="status-message" class="hidden mt-6 p-4 rounded-lg text-center"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Import Firebase SDKs (Removed Storage)
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-app-compat.js";
+        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore-compat.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth-compat.js";
+        // Removed: import { getStorage, ref, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-storage-compat.js";
+        
+        // --- 1. CONFIGURATION (Updated with your Firebase Config) ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyCuD0FvjxWfvQQglpDvN6cBQW0qOxqSR_Q",
+            authDomain: "ema-dojo.firebaseapp.com",
+            projectId: "ema-dojo",
+            storageBucket: "ema-dojo.firebasestorage.app",
+            messagingSenderId: "613830949475",
+            appId: "1:613830949475:web:fa18e5c7bf7892734c5656",
+            measurementId: "G-V2KPE07GT4"
+        };
+        // --- END CONFIGURATION ---
+
+        const APP_ID = 'karate-dojo-waiver-app'; 
+        const DEFAULT_BELT_ID = 'white-belt'; 
+        
+        let db, auth; // Removed storage
+        let minorCount = 0;
+
+        // --- 2. ELEMENT SELECTORS ---
+        const form = document.getElementById('intake-form');
+        const submitBtn = document.getElementById('submit-btn');
+        const addMinorBtn = document.getElementById('add-minor-btn');
+        const minorsContainer = document.getElementById('minors-container');
+        const addMinorButtonContainer = document.getElementById('add-minor-button-container');
+        const canvas = document.getElementById('signature-canvas');
+        const ctx = canvas.getContext('2d');
+        const formFieldset = document.getElementById('form-fieldset');
+
+        // --- 3. FIREBASE & APP INITIALIZATION ---
+        
+        async function main() {
+            try {
+                // Compatibility layer initialization
+                const app = firebase.initializeApp(firebaseConfig);
+                db = app.firestore();
+                auth = app.auth();
+                // Removed: storage = app.storage();
+
+                // Sign in anonymously for data writing permission
+                await auth.signInAnonymously();
+                console.log("Firebase initialized and signed in anonymously.");
+            } catch (error) {
+                console.error("Error initializing Firebase:", error);
+                displayMessage('Error connecting to the database service. Check console for details.', 'error');
+                formFieldset.disabled = true;
+            }
+            
+            // Initial canvas resize
+            requestAnimationFrame(resizeCanvas);
+        }
+        
+        document.addEventListener('DOMContentLoaded', main);
+
+        // --- 4. DYNAMIC MINOR FORM LOGIC ---
+        addMinorBtn.addEventListener('click', () => {
+            minorCount++;
+            const minorFormHTML = `
+                <div class="mt-6 p-4 border rounded-lg bg-gray-50" id="minor-section-${minorCount}">
+                    <h3 class="text-lg font-semibold text-slate-600 mb-4">Minor Student ${minorCount} Information (Under 18)</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="first-name-minor-${minorCount}" class="block text-sm font-medium text-slate-600 mb-1">Preferred Name</label>
+                            <input type="text" id="first-name-minor-${minorCount}" name="first-name-minor-${minorCount}" required class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label for="last-name-minor-${minorCount}" class="block text-sm font-medium text-slate-600 mb-1">Last Name</label>
+                            <input type="text" id="last-name-minor-${minorCount}" name="last-name-minor-${minorCount}" required class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label for="legal-name-minor-${minorCount}" class="block text-sm font-medium text-slate-600 mb-1">Legal Name <span class="text-slate-400">(If Different)</span></label>
+                            <input type="text" id="legal-name-minor-${minorCount}" name="legal-name-minor-${minorCount}" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label for="birthday-minor-${minorCount}" class="block text-sm font-medium text-slate-600 mb-1">Birthday</label>
+                            <input type="date" id="birthday-minor-${minorCount}" name="birthday-minor-${minorCount}" required class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                        </div>
+                    </div>
+                </div>
+            `;
+            minorsContainer.insertAdjacentHTML('beforeend', minorFormHTML);
+            addMinorButtonContainer.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        });
+
+        // --- 5. SIGNATURE PAD LOGIC (Unchanged) ---
+        let isDrawing = false, lastX = 0, lastY = 0;
+
+        function resizeCanvas() {
+            if (!canvas.parentElement || canvas.offsetParent === null) return;
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCanvas.width = canvas.width; tempCanvas.height = canvas.height;
+            if (canvas.width > 0 && canvas.height > 0) {
+                tempCtx.drawImage(canvas, 0, 0);
+            }
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientWidth / 3; 
+            if (tempCanvas.width > 0 && tempCanvas.height > 0) {
+                ctx.drawImage(tempCanvas, 0, 0, tempCanvas.width, tempCanvas.height, 0, 0, canvas.width, canvas.height);
+            }
+            ctx.lineCap = 'round'; ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 3;
+        }
+        function draw(e) {
+            if (!isDrawing) return;
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX || e.touches[0].clientX) - rect.left;
+            const y = (e.clientY || e.touches[0].clientY) - rect.top;
+            ctx.beginPath(); c/t/x.moveTo(lastX, lastY); ctx.lineTo(x, y); ctx.stroke();
+            [lastX, lastY] = [x, y];
+        }
+        function startDrawing(e) {
+            isDrawing = true;
+            const rect = canvas.getBoundingClientRect();
+            [lastX, lastY] = [(e.clientX || e.touches[0].clientX) - rect.left, (e.clientY || e.touches[0].clientY) - rect.top];
+        }
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', () => isDrawing = false);
+        canvas.addEventListener('mouseout', () => isDrawing = false);
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); startDrawing(e); });
+        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); draw(e); });
+        canvas.addEventListener('touchend', () => isDrawing = false);
+        document.getElementById('clear-signature-btn').addEventListener('click', () => ctx.clearRect(0, 0, canvas.width, canvas.height));
+        window.addEventListener('resize', resizeCanvas);
+
+        // --- 6. FORM SUBMISSION LOGIC ---
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (isCanvasBlank()) { displayMessage('Signature is required.', 'error'); return; }
+            if (!db) { displayMessage('Database connection failed. Cannot submit.', 'error'); return; }
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+            displayMessage('Processing your submission...', 'info');
+
+            const formData = new FormData(form);
+            const primaryPhoneNumber = formData.get('phone').replace(/\D/g, '');
+            const primaryEmail = formData.get('email');
+            
+            try {
+                // 1. Capture Signature Data URL (REPLACED STORAGE LOGIC)
+                const signatureDataURL = canvas.toDataURL('image/png');
+
+                // 2. Process Guardian (or Adult Student)
+                const adultData = {
+                    firstName: formData.get('first-name'),
+                    lastName: formData.get('last-name'),
+                    legalName: formData.get('legal-name') || '',
+                    birthday: formData.get('birthday'),
+                    email: primaryEmail,
+                    phoneNumber: primaryPhoneNumber,
+                    isGuardian: minorCount > 0,
+                    waiverSigned: true,
+                    signedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    signatureData: signatureDataURL, // Storing Base64 data directly
+                    // Gamification/CRM Defaults
+                    points: 0, 
+                    beltRankId: DEFAULT_BELT_ID,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                };
+                
+                await saveStudentProfile(adultData);
+
+                // 3. Process Minors
+                const minorPromises = [];
+                for (let i = 1; i <= minorCount; i++) {
+                    const minorData = {
+                        firstName: formData.get(`first-name-minor-${i}`),
+                        lastName: formData.get(`last-name-minor-${i}`),
+                        legalName: formData.get(`legal-name-minor-${i}`) || '',
+                        birthday: formData.get(`birthday-minor-${i}`),
+                        email: `${primaryEmail.split('@')[0]}+minor${i}@${primaryEmail.split('@')[1]}`, // Unique email for minors
+                        phoneNumber: primaryPhoneNumber, // Same phone as guardian
+                        isMinor: true,
+                        guardianPhoneNumber: primaryPhoneNumber,
+                        waiverSigned: true,
+                        signedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        signatureData: signatureDataURL, // Shared signature from guardian
+                        // Gamification/CRM Defaults
+                        points: 0,
+                        beltRankId: DEFAULT_BELT_ID,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    };
+                    minorPromises.push(saveStudentProfile(minorData));
+                }
+                
+                await Promise.all(minorPromises);
+
+                // 4. Success View
+                document.getElementById('app-container').innerHTML = `
+                    <div class="text-center py-12">
+                        <svg class="mx-auto h-12 w-12 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        <h1 class="text-2xl font-bold text-slate-800 mt-4">Waiver Submitted!</h1>
+                        <p class="text-slate-600 mt-2">Your profile${minorCount > 0 ? 's' : ''} have been created. Welcome to the Dojo!</p>
+                        <div class="mt-6">
+                            <a href="#" class="inline-block bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition-colors duration-300">Proceed to Check-In Kiosk</a>
+                        </div>
+                    </div>`;
+
+            } catch (error) {
+                console.error("Error during submission: ", error);
+                displayMessage(`An error occurred: ${error.message}. Please try again or contact staff.`, 'error');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Agree & Submit Waiver';
+            }
+        });
+
+        async function saveStudentProfile(profileData) {
+             // Standardize phone number for search/indexing
+            profileData.phoneNumber = profileData.phoneNumber.replace(/\D/g, '');
+
+            // Check for existing profile (to prevent duplicate waiver records)
+            const snapshot = await db.collection('students')
+                                    .where('phoneNumber', '==', profileData.phoneNumber)
+                                    .where('firstName', '==', profileData.firstName)
+                                    .where('lastName', '==', profileData.lastName)
+                                    .limit(1)
+                                    .get();
+
+            if (!snapshot.empty) {
+                const existingDoc = snapshot.docs[0];
+                console.warn(\`Profile for \${profileData.firstName} \${profileData.lastName} already exists. Updating existing document...\`);
+                // Update the existing profile with the new waiver/signature info
+                await existingDoc.ref.update({
+                    waiverSigned: true,
+                    signatureData: profileData.signatureData,
+                    signedAt: profileData.signedAt
+                });
+            } else {
+                // Create new profile
+                await db.collection('students').add(profileData);
+            }
+        }
+        
+        // --- UTILITY FUNCTIONS ---
+        function displayMessage(message, type = 'info') {
+            const el = document.getElementById('status-message');
+            el.innerHTML = message;
+            el.className = 'mt-6 p-4 rounded-lg text-center';
+            if (type === 'error') el.classList.add('bg-red-100', 'text-red-800');
+            else el.classList.add('bg-blue-100', 'text-blue-800');
+            el.classList.remove('hidden');
+        }
+        
+        function isCanvasBlank() {
+            if (canvas.width === 0 || canvas.height === 0) return true;
+            return !ctx.getImageData(0, 0, canvas.width, canvas.height).data.some(channel => channel !== 0);
+        }
+
+    </script>
+    <!-- Include Firebase Compatibility SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore-compat.js"></script>
+</body>
+</html>
