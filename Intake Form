@@ -160,11 +160,10 @@
     </div>
 
     <script type="module">
-        // Import Firebase SDKs (Removed Storage)
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-app-compat.js";
-        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore-compat.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth-compat.js";
-        // Removed: import { getStorage, ref, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-storage-compat.js";
+        // --- CORRECTED IMPORTS: We only import the base compatibility libraries ---
+        import "https://www.gstatic.com/firebasejs/9.6.7/firebase-app-compat.js";
+        import "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth-compat.js";
+        import "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore-compat.js";
         
         // --- 1. CONFIGURATION (Updated with your Firebase Config) ---
         const firebaseConfig = {
@@ -200,9 +199,8 @@
             try {
                 // Compatibility layer initialization
                 const app = firebase.initializeApp(firebaseConfig);
-                db = app.firestore();
-                auth = app.auth();
-                // Removed: storage = app.storage();
+                db = app.firestore(); // Access Firestore via the compatibility object
+                auth = app.auth();     // Access Auth via the compatibility object
 
                 // Sign in anonymously for data writing permission
                 await auth.signInAnonymously();
@@ -273,7 +271,7 @@
             const rect = canvas.getBoundingClientRect();
             const x = (e.clientX || e.touches[0].clientX) - rect.left;
             const y = (e.clientY || e.touches[0].clientY) - rect.top;
-            ctx.beginPath(); c/t/x.moveTo(lastX, lastY); ctx.lineTo(x, y); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(lastX, lastY); ctx.lineTo(x, y); ctx.stroke();
             [lastX, lastY] = [x, y];
         }
         function startDrawing(e) {
@@ -378,6 +376,7 @@
             profileData.phoneNumber = profileData.phoneNumber.replace(/\D/g, '');
 
             // Check for existing profile (to prevent duplicate waiver records)
+            // CORRECTED: Access collection and methods via the global 'db' object
             const snapshot = await db.collection('students')
                                     .where('phoneNumber', '==', profileData.phoneNumber)
                                     .where('firstName', '==', profileData.firstName)
@@ -387,7 +386,7 @@
 
             if (!snapshot.empty) {
                 const existingDoc = snapshot.docs[0];
-                console.warn(\`Profile for \${profileData.firstName} \${profileData.lastName} already exists. Updating existing document...\`);
+                console.warn(`Profile for ${profileData.firstName} ${profileData.lastName} already exists. Updating existing document...`);
                 // Update the existing profile with the new waiver/signature info
                 await existingDoc.ref.update({
                     waiverSigned: true,
