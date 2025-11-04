@@ -69,10 +69,10 @@
     <div id="error-box" class="hidden mt-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-md"></div>
 
     <script type="module">
-        // Import Firebase SDKs
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-app-compat.js";
-        import { getFirestore, collection, query, where, getDocs, updateDoc, doc, addDoc, runTransaction } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore-compat.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth-compat.js";
+        // NO NAMED IMPORTS: We rely on the firebase global object provided by the compatibility scripts.
+        import "https://www.gstatic.com/firebasejs/9.6.7/firebase-app-compat.js";
+        import "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth-compat.js";
+        import "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore-compat.js";
         
         // --- 1. CONFIGURATION (Using your supplied config) ---
         const firebaseConfig = {
@@ -144,7 +144,7 @@
         async function fetchInitialData() {
             showLoader('Activating kiosk...');
             try {
-                // Initialize Firebase
+                // Initialize Firebase globally
                 const app = firebase.initializeApp(firebaseConfig);
                 db = app.firestore();
                 auth = app.auth();
@@ -152,6 +152,7 @@
                 
                 // Fetch all classes (required for time-based check-in logic)
                 showLoader('Loading class schedules...');
+                // CORRECTED: Use compatibility methods for collection access and queries
                 const classSnapshot = await db.collection('classes').get();
                 classes = classSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
@@ -172,7 +173,6 @@
         };
 
         const getStudentWaiverStatus = (student) => {
-             // For production, check a robust field. For now, check 'waiverSigned' boolean.
             return student.waiverSigned === true;
         };
 
@@ -185,20 +185,18 @@
             const formattedPhone = formatPhoneNumber(searchValue);
 
             try {
-                // Query for all students matching the phone number
+                // CORRECTED: Use compatibility methods for collection access and where clause
                 const q = db.collection('students').where('phoneNumber', '==', formattedPhone);
                 const snapshot = await q.get();
                 
                 searchedStudents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
                 if (searchedStudents.length === 0) {
-                    // No students found with that number
                     displayStudentResults([]);
                     showStage('results');
                     return;
                 }
 
-                // Check waiver status for all found students
                 const studentsRequiringWaiver = searchedStudents.filter(s => !getStudentWaiverStatus(s));
                 
                 if (studentsRequiringWaiver.length > 0) {
@@ -211,7 +209,6 @@
                     checkInSelectedBtn.style.display = 'none';
                     showStage('results');
                 } else {
-                    // All waivers signed, proceed to selection
                     displayStudentResults(searchedStudents);
                     showStage('results');
                 }
@@ -343,8 +340,8 @@
             const studentRef = db.collection('students').doc(student.id);
             const attendanceCollectionRef = db.collection('attendance');
             
-            // Use a transaction for atomic update (ensures points update correctly)
-            const result = await runTransaction(db, async (transaction) => {
+            // CORRECTED: Use compatibility method for transaction
+            const result = await db.runTransaction(async (transaction) => {
                 const studentDoc = await transaction.get(studentRef);
 
                 if (!studentDoc.exists) {
@@ -365,9 +362,11 @@
                     studentId: student.id,
                     classId: currentClass.id,
                     className: currentClass.name,
+                    // CORRECTED: Use compatibility method for server timestamp
                     checkInDate: firebase.firestore.FieldValue.serverTimestamp(),
                     pointsEarned: pointsToAward
                 };
+                
                 // Note: In transactions, adding a doc requires a generated reference first.
                 const newAttendanceRef = attendanceCollectionRef.doc(); 
                 transaction.set(newAttendanceRef, attendanceRecord);
