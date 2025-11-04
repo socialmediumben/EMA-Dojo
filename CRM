@@ -960,86 +960,106 @@
         // --- NEW REPORTS COMPONENT ---
 
         function ReportsPage({ students, attendanceMap, beltRankMap, classes, classMap }) {
-            const [minClasses, setMinClasses] = useState(0);
-            const [maxClasses, setMaxClasses] = useState(1000);
-            const [selectedBeltId, setSelectedBeltId] = useState('');
+            // New state for Sorting and Filtering
+            const [sortConfig, setSortConfig] = useState({ key: 'lastCheckInDate', direction: 'descending' });
+            const [activeFilter, setActiveFilter] = useState({ key: null, values: new Set() });
 
-            // Calculate student stats and filter
-            const studentReports = useMemo(() => {
+
+            const getStudentReports = useCallback(() => {
                 return students
                     .map(student => {
                         const logs = attendanceMap[student.id] || [];
                         return {
                             ...student,
                             attendanceCount: logs.length,
+                            totalPoints: student.points || 0,
+                            beltName: beltRankMap.get(student.beltRankId)?.name || 'Unassigned',
                             lastCheckInDate: logs.length > 0 ? logs.sort((a, b) => b.checkInDate.toDate() - a.checkInDate.toDate())[0].checkInDate : null,
-                            beltName: beltRankMap.get(student.beltRankId)?.name || 'Unassigned'
                         };
-                    })
-                    .filter(report => {
-                        const matchesCount = report.attendanceCount >= minClasses && report.attendanceCount <= maxClasses;
-                        const matchesBelt = !selectedBeltId || report.beltRankId === selectedBeltId;
-                        return matchesCount && matchesBelt;
-                    })
-                    .sort((a, b) => {
-                        // Sort by last check-in date (most recent first)
-                        const dateA = a.lastCheckInDate ? a.lastCheckInDate.toDate().getTime() : 0;
-                        const dateB = b.lastCheckInDate ? b.lastCheckInDate.toDate().getTime() : 0;
-                        return dateB - dateA;
                     });
-            }, [students, attendanceMap, beltRankMap, minClasses, maxClasses, selectedBeltId]);
+            }, [students, attendanceMap, beltRankMap]);
+
+
+            const studentReports = useMemo(() => {
+                let reportData = getStudentReports();
+
+                // 1. Filtering
+                if (activeFilter.key && activeFilter.values.size > 0) {
+                    reportData = reportData.filter(student => {
+                        const value = String(student[activeFilter.key]);
+                        return Array.from(activeFilter.values).some(filterVal => String(filterVal) === value);
+                    });
+                }
+                
+                // 2. Sorting
+                if (sortConfig.key) {
+                    reportData.sort((a, b) => {
+                        const aValue = a[sortConfig.key] || (sortConfig.key === 'lastCheckInDate' ? new firebase.firestore.Timestamp(0, 0) : '');
+                        const bValue = b[sortConfig.key] || (sortConfig.key === 'lastCheckInDate' ? new firebase.firestore.Timestamp(0, 0) : '');
+                        
+                        let comparison = 0;
+                        
+                        if (typeof aValue === 'number' && typeof bValue === 'number') {
+                            comparison = aValue - bValue;
+                        } else if (aValue.toDate && bValue.toDate) {
+                            comparison = aValue.toDate().getTime() - bValue.toDate().getTime();
+                        } else {
+                             comparison = String(aValue).localeCompare(String(bValue));
+                        }
+                        
+                        return sortConfig.direction === 'ascending' ? comparison : -comparison;
+                    });
+                }
+
+                return reportData;
+            }, [sortConfig, activeFilter, getStudentReports]);
+            
+            // Defines the columns and their associated data key for sorting/filtering
+            const columns = useMemo(() => [
+                { key: 'firstName', label: 'Name' },
+                { key: 'beltName', label: 'Rank' },
+                { key: 'attendanceCount', label: 'Total Classes' },
+                { key: 'totalPoints', label: 'Total Points' },
+                { key: 'lastCheckInDate', label: 'Last Activity' },
+            ], []);
+
+
+            // Function to handle header click for sorting
+            const handleSort = (key) => {
+                let direction = 'ascending';
+                if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+                    direction = 'descending';
+                }
+                setSortConfig({ key, direction });
+            };
+
+            // Helper to get unique values for filtering a column
+            const getUniqueValues = (key) => {
+                const unique = new Set(getStudentReports().map(r => r[key]));
+                return Array.from(unique).sort();
+            };
 
             return (
                 <div className="max-w-6xl mx-auto">
                     <h2 className="text-3xl font-bold text-gray-800 mb-6">Dojo Reports & Analytics ({studentReports.length} Students)</h2>
-
-                    {/* Report Filters */}
-                    <InfoCard title="Filters" className="mb-6">
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <div className="col-span-2">
-                                <label className="block text-sm font-medium text-gray-700">Filter by Belt Rank</label>
-                                <select 
-                                    value={selectedBeltId} 
-                                    onChange={e => setSelectedBeltId(e.target.value)} 
-                                    className="w-full px-3 py-2 border rounded-md"
-                                >
-                                    <option value="">All Ranks</option>
-                                    {Array.from(beltRankMap.values()).map(belt => (
-                                        <option key={belt.id} value={belt.id}>{belt.name}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Min. Classes Attended</label>
-                                <input 
-                                    type="number" 
-                                    value={minClasses} 
-                                    onChange={e => setMinClasses(parseInt(e.target.value) || 0)} 
-                                    className="w-full px-3 py-2 border rounded-md"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Max. Classes Attended</label>
-                                <input 
-                                    type="number" 
-                                    value={maxClasses} 
-                                    onChange={e => setMaxClasses(parseInt(e.target.value) || 1000)} 
-                                    className="w-full px-3 py-2 border rounded-md"
-                                />
-                            </div>
-                        </div>
-                    </InfoCard>
 
                     {/* Report Table */}
                     <div className="bg-white rounded-lg shadow overflow-x-auto">
                         <table className="min-w-full divide-y divide-gray-200">
                             <thead className="bg-gray-50">
                                 <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Classes</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Points</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Activity</th>
+                                    {columns.map(column => (
+                                        <SortableHeader 
+                                            key={column.key}
+                                            column={column}
+                                            sortConfig={sortConfig}
+                                            onSort={handleSort}
+                                            onFilter={() => setActiveFilter(prev => ({ key: column.key, values: prev.key === column.key ? prev.values : new Set() }))}
+                                            getUniqueValues={getUniqueValues}
+                                            activeFilter={activeFilter}
+                                            setActiveFilter={setActiveFilter}
+                                        />
+                                    ))}
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
@@ -1055,7 +1075,7 @@
                                             {student.attendanceCount}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-600">
-                                            {student.points || 0}
+                                            {student.totalPoints || 0}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                             {student.lastCheckInDate ? formatDate(student.lastCheckInDate) : 'Never'}
@@ -1068,7 +1088,97 @@
                             <div className="p-4 text-center text-gray-500">No students match the current report criteria.</div>
                         )}
                     </div>
+                    
+                    {/* Clear Filter Button */}
+                    {activeFilter.key && (
+                         <div className="mt-4">
+                            <button 
+                                onClick={() => setActiveFilter({ key: null, values: new Set() })}
+                                className="px-4 py-2 text-sm text-red-600 border border-red-300 rounded-md hover:bg-red-50"
+                            >
+                                Clear Active Filter ({columns.find(c => c.key === activeFilter.key)?.label})
+                            </button>
+                        </div>
+                    )}
                 </div>
+            );
+        }
+        
+        function SortableHeader({ column, sortConfig, onSort, getUniqueValues, activeFilter, setActiveFilter }) {
+            const isSorted = sortConfig.key === column.key;
+            const isFiltered = activeFilter.key === column.key && activeFilter.values.size > 0;
+            const [isFilterOpen, setIsFilterOpen] = useState(false);
+            
+            const uniqueValues = useMemo(() => {
+                if (column.key === 'lastCheckInDate') return []; // No direct filtering on dates in this style
+                if (!isFilterOpen && !isFiltered) return []; // Lazy load values
+                return getUniqueValues(column.key);
+            }, [column.key, getUniqueValues, isFilterOpen, isFiltered]);
+
+            const handleFilterChange = (value, isChecked) => {
+                setActiveFilter(prev => {
+                    const newValues = new Set(prev.values);
+                    if (isChecked) {
+                        newValues.add(value);
+                    } else {
+                        newValues.delete(value);
+                    }
+                    return { key: column.key, values: newValues };
+                });
+            };
+
+            const handleFilterApply = () => {
+                if (activeFilter.values.size === 0) {
+                    setActiveFilter({ key: null, values: new Set() });
+                }
+                setIsFilterOpen(false);
+            };
+
+            return (
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative">
+                    <div className="flex items-center group">
+                        {/* Sort Button */}
+                        <button 
+                            onClick={() => onSort(column.key)} 
+                            className="flex items-center font-medium hover:text-gray-900 transition-colors"
+                        >
+                            {column.label}
+                            {isSorted && (sortConfig.direction === 'ascending' ? <span>▲</span> : <span>▼</span>)}
+                        </button>
+
+                        {/* Filter Button */}
+                        <button 
+                            onClick={() => { setIsFilterOpen(true); setActiveFilter(prev => ({ key: column.key, values: prev.key === column.key ? prev.values : new Set() }))}}
+                            className={`ml-2 p-1 rounded hover:bg-gray-200 ${isFiltered ? 'text-cyan-600' : 'text-gray-400'}`}
+                            title="Filter Column"
+                        >
+                             <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z" clipRule="evenodd"></path></svg>
+                        </button>
+                    </div>
+
+                    {/* Filter Popup */}
+                    {isFilterOpen && (
+                        <div className="absolute left-0 top-full mt-1 w-64 bg-white border border-gray-300 rounded-lg shadow-xl p-3 z-10" onMouseLeave={() => setIsFilterOpen(false)}>
+                            <div className="max-h-60 overflow-y-auto space-y-1">
+                                {uniqueValues.map(value => (
+                                    <label key={value} className="flex items-center text-sm p-1 hover:bg-gray-50 rounded">
+                                        <input 
+                                            type="checkbox" 
+                                            checked={activeFilter.values.has(value)}
+                                            onChange={(e) => handleFilterChange(value, e.target.checked)}
+                                            className="mr-2 h-4 w-4 text-cyan-600 border-gray-300 rounded focus:ring-cyan-500"
+                                        />
+                                        <span className="truncate">{value === null || value === '' ? '(Blank)' : value}</span>
+                                    </label>
+                                ))}
+                            </div>
+                            <div className="mt-3 flex justify-end space-x-2 border-t pt-2">
+                                <button onClick={handleFilterApply} className="px-3 py-1 text-xs bg-cyan-600 text-white rounded-md hover:bg-cyan-700">Apply</button>
+                                <button onClick={() => { setActiveFilter({ key: null, values: new Set() }); setIsFilterOpen(false); }} className="px-3 py-1 text-xs bg-gray-200 rounded-md hover:bg-gray-300">Clear</button>
+                            </div>
+                        </div>
+                    )}
+                </th>
             );
         }
 
