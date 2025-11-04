@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dojo Check-In Kiosk</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .stage { display: none; }
+        .active-stage { display: block; }
+        .spinner { border: 4px solid rgba(0, 0, 0, 0.1); width: 24px; height: 24px; border-radius: 50%; border-left-color: #0891b2; animation: spin 1s ease infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        /* Style for selected customer cards */
+        .customer-card.selected {
+            border-color: #0891b2; /* cyan-600 */
+            background-color: #ecfeff; /* cyan-50 */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-4">
+
+    <!-- Main Container for Search and Selection Stages -->
+    <div id="main-container" class="w-full max-w-xl mx-auto text-center bg-white p-8 rounded-2xl shadow-lg">
+        
+        <!-- Stage 1: Student enters phone number -->
+        <div id="stage-1-search" class="stage active-stage">
+            <h1 class="text-4xl font-bold text-gray-800">Dojo Check-In</h1>
+            <p class="text-gray-500 mt-2 mb-8">Please enter your phone number to check in.</p>
+            <div class="flex items-center space-x-3">
+                <input type="tel" id="search-value" class="flex-grow block w-full px-4 py-3 text-2xl text-center text-gray-700 bg-white border border-gray-300 rounded-md" placeholder="e.g., 555-123-4567">
+                <button id="search-btn" class="px-8 py-3 text-white bg-cyan-600 rounded-md hover:bg-cyan-700 text-xl">Search</button>
+            </div>
+            <div class="mt-6">
+                <p class="text-gray-500 mb-2">New student?</p>
+                <a href="./customer_intake_form/index.html" target="_self" class="block w-full px-8 py-3 text-white bg-green-600 rounded-md hover:bg-green-700 text-xl">
+                    Sign the Waiver
+                </a>
+            </div>
+        </div>
+        
+        <!-- Stage 2: Shows student results (family members) -->
+        <div id="stage-2-results" class="stage">
+            <h1 class="text-4xl font-bold text-gray-800">Who is checking in?</h1>
+            <p class="text-gray-500 mt-2 mb-8">Please select all names checking in.</p>
+            <div id="results-list" class="space-y-4"></div>
+            <div class="mt-8 flex justify-between items-center">
+                <button id="back-to-search-btn" class="px-6 py-2 text-gray-600 bg-white rounded-md hover:bg-gray-100 border">Back to Search</button>
+                <button id="check-in-selected-btn" class="px-8 py-3 text-white bg-cyan-600 rounded-md hover:bg-cyan-700 text-xl disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>Check In Selected</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Stage 3: Welcome and Success Message -->
+    <div id="stage-3-welcome" class="stage w-full max-w-3xl mx-auto mt-8 p-8 bg-white rounded-2xl shadow-lg">
+        <h1 class="text-5xl font-extrabold text-cyan-600 text-center">Welcome!</h1>
+        <div id="welcome-messages" class="mt-8 space-y-4">
+            <!-- Dynamic success messages will be inserted here -->
+        </div>
+        <button id="start-over-btn" class="w-full px-8 py-4 text-white bg-cyan-600 rounded-md hover:bg-cyan-700 text-xl mt-12">Done</button>
+    </div>
+
+    <!-- Reusable loader and error components -->
+    <div id="loader" class="hidden items-center justify-center mt-6">
+        <div class="spinner"></div>
+        <p class="ml-4 text-gray-600">Processing...</p>
+    </div>
+    <div id="error-box" class="hidden mt-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-md"></div>
+
+    <script type="module">
+        // Import Firebase SDKs
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-app-compat.js";
+        import { getFirestore, collection, query, where, getDocs, updateDoc, doc, addDoc, runTransaction } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore-compat.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth-compat.js";
+        
+        // --- 1. CONFIGURATION (Using your supplied config) ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyCuD0FvjxWfvQQglpDvN6cBQW0qOxqSR_Q",
+            authDomain: "ema-dojo.firebaseapp.com",
+            projectId: "ema-dojo",
+            storageBucket: "ema-dojo.firebasestorage.app",
+            messagingSenderId: "613830949475",
+            appId: "1:613830949475:web:fa18e5c7bf7892734c5656",
+            measurementId: "G-V2KPE07GT4"
+        };
+        // --- END CONFIGURATION ---
+
+        // --- Element References ---
+        const stages = { search: document.getElementById('stage-1-search'), results: document.getElementById('stage-2-results'), welcome: document.getElementById('stage-3-welcome') };
+        const mainContainer = document.getElementById('main-container');
+        const searchBtn = document.getElementById('search-btn');
+        const resultsList = document.getElementById('results-list');
+        const welcomeMessagesContainer = document.getElementById('welcome-messages');
+        const startOverBtn = document.getElementById('start-over-btn');
+        const backToSearchBtn = document.getElementById('back-to-search-btn');
+        const checkInSelectedBtn = document.getElementById('check-in-selected-btn');
+        const loader = document.getElementById('loader');
+        const errorBox = document.getElementById('error-box');
+
+        // --- State Variables ---
+        let db, auth;
+        let searchedStudents = []; 
+        let selectedStudents = [];
+        let classes = [];
+
+        // --- UI Helper Functions ---
+        const showLoader = (message) => { 
+            Object.values(stages).forEach(s => s.classList.remove('active-stage')); 
+            mainContainer.style.display = 'none'; 
+            stages.welcome.style.display = 'none';
+            loader.querySelector('p').textContent = message || 'Processing...'; 
+            loader.style.display = 'flex'; 
+            errorBox.style.display = 'none'; 
+        };
+        const hideLoader = () => { 
+            loader.style.display = 'none';
+        };
+        const showError = (message) => { 
+            errorBox.textContent = `Error: ${message}`; 
+            errorBox.style.display = 'block'; 
+        };
+        const hideError = () => errorBox.style.display = 'none';
+        
+        const showStage = (stageName) => { 
+            hideLoader(); 
+            hideError(); 
+            
+            mainContainer.style.display = 'none';
+            stages.welcome.style.display = 'none';
+
+            if (stages[stageName]) {
+                if (stageName === 'welcome') {
+                    stages.welcome.style.display = 'block';
+                } else {
+                    mainContainer.style.display = 'block';
+                    Object.values(stages).forEach(s => s.classList.remove('active-stage'));
+                    stages[stageName].classList.add('active-stage');
+                }
+            }
+        };
+
+        // --- Initialization & Data Fetching ---
+        async function fetchInitialData() {
+            showLoader('Activating kiosk...');
+            try {
+                // Initialize Firebase
+                const app = firebase.initializeApp(firebaseConfig);
+                db = app.firestore();
+                auth = app.auth();
+                await auth.signInAnonymously();
+                
+                // Fetch all classes (required for time-based check-in logic)
+                showLoader('Loading class schedules...');
+                const classSnapshot = await db.collection('classes').get();
+                classes = classSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                showStage('search');
+            } catch (error) {
+                hideLoader();
+                const errorMessage = `Initialization failed: ${error.message}`;
+                console.error(errorMessage);
+                showError(errorMessage);
+            }
+        };
+        
+        // --- Core Application Logic ---
+
+        // Helper to format phone number for accurate Firestore search
+        const formatPhoneNumber = (input) => {
+            return input.replace(/\D/g, '');
+        };
+
+        const getStudentWaiverStatus = (student) => {
+             // For production, check a robust field. For now, check 'waiverSigned' boolean.
+            return student.waiverSigned === true;
+        };
+
+        const searchStudents = async () => {
+            if (!db) return;
+            const searchValue = document.getElementById('search-value').value.trim();
+            if (!searchValue) return;
+            
+            showLoader('Searching for students...');
+            const formattedPhone = formatPhoneNumber(searchValue);
+
+            try {
+                // Query for all students matching the phone number
+                const q = db.collection('students').where('phoneNumber', '==', formattedPhone);
+                const snapshot = await q.get();
+                
+                searchedStudents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                if (searchedStudents.length === 0) {
+                    // No students found with that number
+                    displayStudentResults([]);
+                    showStage('results');
+                    return;
+                }
+
+                // Check waiver status for all found students
+                const studentsRequiringWaiver = searchedStudents.filter(s => !getStudentWaiverStatus(s));
+                
+                if (studentsRequiringWaiver.length > 0) {
+                    hideLoader();
+                    const h1 = document.querySelector('#stage-2-results h1');
+                    const p = document.querySelector('#stage-2-results p');
+                    h1.textContent = 'Waiver Required';
+                    p.textContent = `One or more profiles linked to this number needs to complete the waiver.`;
+                    resultsList.innerHTML = `<a href="./customer_intake_form/index.html" target="_self" class="block w-full px-8 py-4 text-white bg-green-600 rounded-md hover:bg-green-700 text-xl">Sign the Waiver</a>`;
+                    checkInSelectedBtn.style.display = 'none';
+                    showStage('results');
+                } else {
+                    // All waivers signed, proceed to selection
+                    displayStudentResults(searchedStudents);
+                    showStage('results');
+                }
+            } catch (error) {
+                hideLoader();
+                showError(`Search failed: ${error.message}`);
+            }
+        };
+        
+        const displayStudentResults = (students) => {
+            const h1 = document.querySelector('#stage-2-results h1');
+            const p = document.querySelector('#stage-2-results p');
+            h1.textContent = 'Who is checking in?';
+            p.textContent = "Please tap all names checking in.";
+            checkInSelectedBtn.style.display = 'inline-block';
+
+            resultsList.innerHTML = '';
+            selectedStudents = []; 
+            checkInSelectedBtn.disabled = true;
+
+            if (students.length === 0) {
+                resultsList.innerHTML = `<p class="text-gray-500 text-center p-4 text-xl">No students found with that number.</p><a href="./customer_intake_form/index.html" target="_self" class="block w-full mt-4 px-8 py-4 text-white bg-green-600 rounded-md hover:bg-green-700 text-xl">Sign the Waiver</a>`;
+                checkInSelectedBtn.style.display = 'none';
+                return;
+            }
+
+            students.forEach(student => {
+                const card = document.createElement('div');
+                card.className = 'customer-card w-full text-center p-4 bg-white border-2 border-gray-300 rounded-md hover:border-cyan-500 focus:border-cyan-500 transition-all text-2xl font-semibold cursor-pointer';
+                card.textContent = `${student.firstName || ''} ${student.lastName || ''}`;
+                card.dataset.studentId = student.id;
+                card.onclick = () => toggleStudentSelection(student, card);
+                resultsList.appendChild(card);
+            });
+        };
+
+        const toggleStudentSelection = (student, cardElement) => {
+            const index = selectedStudents.findIndex(s => s.id === student.id);
+            if (index > -1) {
+                selectedStudents.splice(index, 1);
+                cardElement.classList.remove('selected');
+            } else {
+                selectedStudents.push(student);
+                cardElement.classList.add('selected');
+            }
+            checkInSelectedBtn.disabled = selectedStudents.length === 0;
+        };
+
+        // --- Time-Based Check-in Logic ---
+
+        const getDayOfWeek = (date) => {
+            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            return days[date.getDay()];
+        };
+
+        const getCurrentTime24Hr = (date) => {
+            const hours = date.getHours().toString().padStart(2, '0');
+            const minutes = date.getMinutes().toString().padStart(2, '0');
+            return `${hours}:${minutes}`;
+        };
+
+        const findCurrentClass = () => {
+            if (classes.length === 0) return null;
+            
+            const now = new Date();
+            const currentDay = getDayOfWeek(now);
+            const currentTime = getCurrentTime24Hr(now);
+            
+            // Check current time against class schedule times
+            // We use a small tolerance (e.g., 5 minutes) to ensure check-ins don't fail immediately
+            // if a student is slightly early or late.
+            const checkInToleranceMinutes = 5; 
+
+            for (const cls of classes) {
+                if (cls.dayOfWeek === currentDay) {
+                    // Convert stored HH:MM to comparable Date objects for checking tolerance
+                    const startHours = parseInt(cls.startTime.substring(0, 2), 10);
+                    const startMinutes = parseInt(cls.startTime.substring(3, 5), 10);
+                    const endHours = parseInt(cls.endTime.substring(0, 2), 10);
+                    const endMinutes = parseInt(cls.endTime.substring(3, 5), 10);
+
+                    const classStart = new Date(now);
+                    classStart.setHours(startHours, startMinutes - checkInToleranceMinutes, 0, 0); 
+                    
+                    const classEnd = new Date(now);
+                    classEnd.setHours(endHours, endMinutes + checkInToleranceMinutes, 0, 0); 
+
+                    if (now >= classStart && now <= classEnd) {
+                        return cls;
+                    }
+                }
+            }
+            
+            return null; // No class currently in session
+        };
+        
+        const proceedWithCheckIn = async () => {
+            if (selectedStudents.length === 0) return;
+            
+            showLoader('Determining current class...');
+
+            const currentClass = findCurrentClass();
+            if (!currentClass) {
+                showError("No class is currently in session. Please check your schedule.");
+                return;
+            }
+
+            const checkInPromises = selectedStudents.map(student => 
+                performStudentCheckIn(student, currentClass)
+            );
+
+            try {
+                const results = await Promise.all(checkInPromises);
+                
+                welcomeMessagesContainer.innerHTML = '';
+                results.forEach(result => {
+                    const messageCard = createWelcomeMessage(result);
+                    welcomeMessagesContainer.appendChild(messageCard);
+                });
+                showStage('welcome');
+
+            } catch (error) {
+                console.error("Batch Check-in failed:", error);
+                showError(`One or more check-ins failed: ${error.message}`);
+            }
+        };
+
+        const performStudentCheckIn = async (student, currentClass) => {
+            const studentRef = db.collection('students').doc(student.id);
+            const attendanceCollectionRef = db.collection('attendance');
+            
+            // Use a transaction for atomic update (ensures points update correctly)
+            const result = await runTransaction(db, async (transaction) => {
+                const studentDoc = await transaction.get(studentRef);
+
+                if (!studentDoc.exists) {
+                    throw new Error("Student profile not found.");
+                }
+
+                const currentPoints = studentDoc.data().points || 0;
+                const pointsToAward = currentClass.pointValue || 1; // Default to 1 if not set in class data
+                const newPoints = currentPoints + pointsToAward;
+
+                // 1. Update Student's points
+                transaction.update(studentRef, { 
+                    points: newPoints 
+                });
+
+                // 2. Add Attendance Record
+                const attendanceRecord = {
+                    studentId: student.id,
+                    classId: currentClass.id,
+                    className: currentClass.name,
+                    checkInDate: firebase.firestore.FieldValue.serverTimestamp(),
+                    pointsEarned: pointsToAward
+                };
+                // Note: In transactions, adding a doc requires a generated reference first.
+                const newAttendanceRef = attendanceCollectionRef.doc(); 
+                transaction.set(newAttendanceRef, attendanceRecord);
+
+                return {
+                    name: studentDoc.data().firstName,
+                    className: currentClass.name,
+                    pointsAwarded: pointsToAward,
+                    newTotalPoints: newPoints,
+                };
+            });
+            
+            return result;
+        };
+        
+        const createWelcomeMessage = (result) => {
+            const card = document.createElement('div');
+            card.className = 'bg-white p-6 rounded-xl shadow-lg border-l-4 border-cyan-500 text-left';
+            
+            card.innerHTML = `
+                <p class="text-3xl font-bold text-gray-800">${result.name}</p>
+                <p class="text-xl text-gray-600 mt-2">Checked into: <span class="font-semibold text-cyan-700">${result.className}</span></p>
+                <p class="text-lg text-gray-500 mt-4">
+                    Awarded <span class="font-bold text-green-600">${result.pointsAwarded} points</span>!
+                </p>
+                <p class="text-2xl font-extrabold text-cyan-600 mt-2">
+                    Total Points: ${result.newTotalPoints}
+                </p>
+            `;
+            return card;
+        };
+
+        // --- Event Listeners ---
+        searchBtn.addEventListener('click', searchStudents);
+        checkInSelectedBtn.addEventListener('click', proceedWithCheckIn);
+        
+        startOverBtn.addEventListener('click', () => {
+            document.getElementById('search-value').value = ''; 
+            selectedStudents = []; 
+            showStage('search');
+        });
+
+        backToSearchBtn.addEventListener('click', () => { 
+            document.getElementById('search-value').value = ''; 
+            selectedStudents = []; 
+            showStage('search'); 
+        });
+
+        // --- Start the application ---
+        fetchInitialData();
+    </script>
+    <!-- Include Firebase Compatibility SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore-compat.js"></script>
+</body>
+</html>
