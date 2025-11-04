@@ -206,8 +206,13 @@
             const handleAddClass = async (data) => {
                 setIsLoading(true);
                 try {
-                    await db.collection('classes').add(data);
-                    setError('');
+                    // Check if data is provided and is an object
+                    if (data && typeof data === 'object') {
+                        await db.collection('classes').add(data);
+                        setError('');
+                    } else {
+                        throw new Error("Invalid data format for new class.");
+                    }
                 } catch (e) {
                     console.error("Error adding class:", e);
                     setError("Failed to add new class schedule.");
@@ -242,6 +247,7 @@
                     case 'directory':
                         return <StudentDirectory 
                             students={students} 
+                            beltRanks={beltRanks} 
                             beltRankMap={beltRankMap} 
                             attendanceMap={studentAttendanceMap} 
                             onUpdateStudent={handleUpdateStudent}
@@ -261,9 +267,18 @@
                             isLoading={isLoading}
                             db={db}
                         />;
+                    case 'reports': // <-- New case for Reports page
+                        return <ReportsPage
+                            students={students}
+                            attendanceMap={studentAttendanceMap}
+                            beltRankMap={beltRankMap}
+                            classes={classes}
+                            classMap={classMap}
+                        />;
                     default:
                         return <StudentDirectory 
                             students={students} 
+                            beltRanks={beltRanks} 
                             beltRankMap={beltRankMap} 
                             attendanceMap={studentAttendanceMap} 
                             onUpdateStudent={handleUpdateStudent}
@@ -303,6 +318,7 @@
                              <button onClick={() => onNavigate('directory')} className="text-gray-600 hover:text-cyan-700 font-medium">Students</button>
                              <button onClick={() => onNavigate('schedule_admin')} className="text-gray-600 hover:text-cyan-700 font-medium">Schedule</button>
                              <button onClick={() => onNavigate('belt_admin')} className="text-gray-600 hover:text-cyan-700 font-medium">Belts</button>
+                             <button onClick={() => onNavigate('reports')} className="text-gray-600 hover:text-cyan-700 font-medium">Reports</button> 
                         </nav>
                         <button onClick={onSignOut} className="px-4 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700">Logout</button>
                     </div>
@@ -375,7 +391,7 @@
 
         // --- 3. Admin Components ---
         
-        function StudentDirectory({ students, beltRankMap, attendanceMap, onUpdateStudent, classMap }) {
+        function StudentDirectory({ students, beltRanks, beltRankMap, attendanceMap, onUpdateStudent, classMap }) {
             const [searchTerm, setSearchTerm] = useState('');
             const [selectedStudent, setSelectedStudent] = useState(null);
 
@@ -446,7 +462,7 @@
                     {selectedStudent && (
                         <StudentProfileModal 
                             student={selectedStudent} 
-                            beltRanks={beltRanks} 
+                            beltRanks={beltRanks} // <-- FIX 2: Pass beltRanks list into the modal
                             beltRankMap={beltRankMap}
                             classMap={classMap}
                             onClose={() => setSelectedStudent(null)}
@@ -714,13 +730,25 @@
 
             const handleSubmit = (e) => {
                 e.preventDefault();
-                onSave(classItem.id || null, { 
+                
+                const classData = { 
                     name, 
                     dayOfWeek, 
                     startTime, 
                     endTime, 
                     pointValue: parseInt(pointValue) 
-                });
+                };
+
+                // The logic determines which handler to call (onUpdateClass or onAddClass)
+                // ScheduleAdmin passes the correct handler via the `onSave` prop.
+                if (classItem.id) {
+                    // Updating existing class
+                    onSave(classItem.id, classData); 
+                } else {
+                    // Adding new class - Pass only the data object
+                    onSave(classData);
+                }
+
                 onClose();
             };
 
@@ -929,6 +957,120 @@
             );
         }
 
+        // --- NEW REPORTS COMPONENT ---
+
+        function ReportsPage({ students, attendanceMap, beltRankMap, classes, classMap }) {
+            const [minClasses, setMinClasses] = useState(0);
+            const [maxClasses, setMaxClasses] = useState(1000);
+            const [selectedBeltId, setSelectedBeltId] = useState('');
+
+            // Calculate student stats and filter
+            const studentReports = useMemo(() => {
+                return students
+                    .map(student => {
+                        const logs = attendanceMap[student.id] || [];
+                        return {
+                            ...student,
+                            attendanceCount: logs.length,
+                            lastCheckInDate: logs.length > 0 ? logs.sort((a, b) => b.checkInDate.toDate() - a.checkInDate.toDate())[0].checkInDate : null,
+                            beltName: beltRankMap.get(student.beltRankId)?.name || 'Unassigned'
+                        };
+                    })
+                    .filter(report => {
+                        const matchesCount = report.attendanceCount >= minClasses && report.attendanceCount <= maxClasses;
+                        const matchesBelt = !selectedBeltId || report.beltRankId === selectedBeltId;
+                        return matchesCount && matchesBelt;
+                    })
+                    .sort((a, b) => {
+                        // Sort by last check-in date (most recent first)
+                        const dateA = a.lastCheckInDate ? a.lastCheckInDate.toDate().getTime() : 0;
+                        const dateB = b.lastCheckInDate ? b.lastCheckInDate.toDate().getTime() : 0;
+                        return dateB - dateA;
+                    });
+            }, [students, attendanceMap, beltRankMap, minClasses, maxClasses, selectedBeltId]);
+
+            return (
+                <div className="max-w-6xl mx-auto">
+                    <h2 className="text-3xl font-bold text-gray-800 mb-6">Dojo Reports & Analytics ({studentReports.length} Students)</h2>
+
+                    {/* Report Filters */}
+                    <InfoCard title="Filters" className="mb-6">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div className="col-span-2">
+                                <label className="block text-sm font-medium text-gray-700">Filter by Belt Rank</label>
+                                <select 
+                                    value={selectedBeltId} 
+                                    onChange={e => setSelectedBeltId(e.target.value)} 
+                                    className="w-full px-3 py-2 border rounded-md"
+                                >
+                                    <option value="">All Ranks</option>
+                                    {Array.from(beltRankMap.values()).map(belt => (
+                                        <option key={belt.id} value={belt.id}>{belt.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Min. Classes Attended</label>
+                                <input 
+                                    type="number" 
+                                    value={minClasses} 
+                                    onChange={e => setMinClasses(parseInt(e.target.value) || 0)} 
+                                    className="w-full px-3 py-2 border rounded-md"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Max. Classes Attended</label>
+                                <input 
+                                    type="number" 
+                                    value={maxClasses} 
+                                    onChange={e => setMaxClasses(parseInt(e.target.value) || 1000)} 
+                                    className="w-full px-3 py-2 border rounded-md"
+                                />
+                            </div>
+                        </div>
+                    </InfoCard>
+
+                    {/* Report Table */}
+                    <div className="bg-white rounded-lg shadow overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Classes</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Points</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Activity</th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                                {studentReports.map(student => (
+                                    <tr key={student.id} className="hover:bg-gray-50">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                            {student.firstName} {student.lastName}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                            {student.beltName}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-cyan-600">
+                                            {student.attendanceCount}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-600">
+                                            {student.points || 0}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            {student.lastCheckInDate ? formatDate(student.lastCheckInDate) : 'Never'}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                        {studentReports.length === 0 && (
+                            <div className="p-4 text-center text-gray-500">No students match the current report criteria.</div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
 
         // --- Utility Components ---
         const InfoCard = ({ title, children, className }) => (<div className={`bg-white p-6 rounded-lg shadow-sm border ${className || ''}`}><h3 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">{title}</h3><div className="space-y-3">{children}</div></div>);
