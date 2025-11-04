@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Karate Dojo CRM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- React and Babel -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+
+    <!-- Firebase SDKs (Compatibility V9/V8) -->
+    <!-- Using compat ensures functions like signInWithEmailAndPassword work well inside the React flow -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore-compat.js"></script>
+    
+    <script>
+        // --- 1. CONFIGURATION ---
+        // REPLACE with your actual configuration object for ema-dojo
+        const firebaseConfig = {
+            apiKey: "AIzaSyCuD0FvjxWfvQQglpDvN6cBQW0qOxqSR_Q",
+            authDomain: "ema-dojo.firebaseapp.com",
+            projectId: "ema-dojo",
+            storageBucket: "ema-dojo.firebasestorage.app",
+            messagingSenderId: "613830949475",
+            appId: "1:613830949475:web:fa18e5c7bf7892734c5656",
+            measurementId: "G-V2KPE07GT4"
+        };
+        
+        // Initialize Firebase globally using the compatibility layer
+        if (typeof firebase !== 'undefined') {
+            firebase.initializeApp(firebaseConfig);
+        }
+    </script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        #root { min-height: 100vh; display: flex; flex-direction: column; }
+        .spinner { border: 4px solid rgba(0, 0, 0, 0.1); width: 24px; height: 24px; border-radius: 50%; border-left-color: #0891b2; animation: spin 1s ease infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .modal-overlay { background-color: rgba(0, 0, 0, 0.5); }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useCallback } = React;
+
+        // --- Firebase Global Instances ---
+        let db;
+        let auth;
+        if (typeof firebase !== 'undefined') {
+             auth = firebase.auth();
+             db = firebase.firestore();
+             db.settings({ timestampsInSnapshots: true }); // Necessary for compat mode
+        }
+        
+        // --- Constants ---
+        const DEFAULT_BELT_ID = 'white-belt';
+        
+        // --- Utility Functions ---
+        const formatDate = (timestamp) => {
+            if (!timestamp) return 'N/A';
+            const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+            return date.toLocaleDateString('en-US', { 
+                year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric' 
+            });
+        };
+        
+        const formatTime = (timeString) => {
+             if (!timeString) return 'N/A';
+             const [hours, minutes] = timeString.split(':').map(Number);
+             const date = new Date();
+             date.setHours(hours, minutes, 0, 0);
+             return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+        };
+        
+        const getDayOfWeek = (dayString) => {
+            const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+            return days.indexOf(dayString);
+        };
+        
+        // --- Main App Component ---
+        function App() {
+            const [user, setUser] = useState(null);
+            const [authLoading, setAuthLoading] = useState(true);
+            const [isLoading, setIsLoading] = useState(false);
+            const [error, setError] = useState('');
+            const [currentView, setCurrentView] = useState('directory');
+            
+            // Data stores
+            const [students, setStudents] = useState([]);
+            const [attendance, setAttendance] = useState([]);
+            const [beltRanks, setBeltRanks] = useState([]);
+            const [classes, setClasses] = useState([]);
+
+            // 1. Auth Listener
+            useEffect(() => {
+                if (!auth) {
+                    console.error("Firebase Auth not initialized.");
+                    setAuthLoading(false);
+                    return;
+                }
+                console.log("DEBUG: App useEffect for Auth Listener started.");
+                const unsubscribe = auth.onAuthStateChanged(currentUser => {
+                    setUser(currentUser);
+                    setAuthLoading(false);
+                    console.log(`DEBUG: Auth State Changed. User: ${currentUser ? currentUser.email : 'NULL'}`);
+                });
+                return () => unsubscribe();
+            }, []);
+
+            // 2. Data Listeners (only run when authenticated)
+            useEffect(() => {
+                if (!db || !user) return;
+
+                console.log("DEBUG: Starting Firestore Data Listeners.");
+
+                const unsubscribeStudents = db.collection('students').onSnapshot(snapshot => {
+                    const studentList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    setStudents(studentList);
+                }, err => {
+                    console.error("Error fetching students:", err);
+                    setError("Could not load student data.");
+                });
+                
+                const unsubscribeAttendance = db.collection('attendance').onSnapshot(snapshot => {
+                    const attendanceList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    setAttendance(attendanceList);
+                }, err => {
+                    console.error("Error fetching attendance:", err);
+                });
+                
+                const unsubscribeClasses = db.collection('classes').onSnapshot(snapshot => {
+                    const classList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    setClasses(classList);
+                }, err => {
+                    console.error("Error fetching classes:", err);
+                });
+                
+                const unsubscribeBelts = db.collection('beltRanks').orderBy('order').onSnapshot(snapshot => {
+                    const beltList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    setBeltRanks(beltList);
+                }, err => {
+                    console.error("Error fetching belt ranks:", err);
+                });
+
+
+                return () => {
+                    unsubscribeStudents();
+                    unsubscribeAttendance();
+                    unsubscribeClasses();
+                    unsubscribeBelts();
+                };
+            }, [user]); 
+
+            // Memoized Data Structures for efficiency
+            const beltRankMap = useMemo(() => new Map(beltRanks.map(b => [b.id, b])), [beltRanks]);
+            const classMap = useMemo(() => new Map(classes.map(c => [c.id, c])), [classes]);
+
+            const studentAttendanceMap = useMemo(() => {
+                return attendance.reduce((acc, log) => {
+                    const studentId = log.studentId;
+                    if (!acc[studentId]) {
+                        acc[studentId] = [];
+                    }
+                    acc[studentId].push(log);
+                    return acc;
+                }, {});
+            }, [attendance]);
+            
+            // --- Handlers for Admin/CRUD ---
+
+            const handleUpdateStudent = async (studentId, data) => {
+                setIsLoading(true);
+                try {
+                    await db.collection('students').doc(studentId).update(data);
+                    setError('');
+                } catch (e) {
+                    console.error("Error updating student:", e);
+                    setError("Failed to update student profile.");
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+
+            const handleUpdateClass = async (classId, data) => {
+                setIsLoading(true);
+                try {
+                    await db.collection('classes').doc(classId).update(data);
+                    setError('');
+                } catch (e) {
+                    console.error("Error updating class:", e);
+                    setError("Failed to update class schedule.");
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+            
+            const handleAddClass = async (data) => {
+                setIsLoading(true);
+                try {
+                    await db.collection('classes').add(data);
+                    setError('');
+                } catch (e) {
+                    console.error("Error adding class:", e);
+                    setError("Failed to add new class schedule.");
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+            
+            const handleDeleteClass = async (classId) => {
+                setIsLoading(true);
+                try {
+                    await db.collection('classes').doc(classId).delete();
+                    setError('');
+                } catch (e) {
+                    console.error("Error deleting class:", e);
+                    setError("Failed to delete class schedule.");
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+
+            const renderMainContent = () => {
+                if (authLoading) return <LoadingScreen message="Initializing CRM..." />;
+                if (!user) {
+                    console.log("DEBUG: Rendering AuthPage (Login Screen).");
+                    return <AuthPage />;
+                }
+                
+                if (isLoading) return <LoadingScreen message="Processing..." />;
+                
+                switch(currentView) {
+                    case 'directory':
+                        return <StudentDirectory 
+                            students={students} 
+                            beltRankMap={beltRankMap} 
+                            attendanceMap={studentAttendanceMap} 
+                            onUpdateStudent={handleUpdateStudent}
+                            classMap={classMap}
+                        />;
+                    case 'schedule_admin':
+                        return <ScheduleAdmin 
+                            classes={classes} 
+                            onUpdateClass={handleUpdateClass} 
+                            onAddClass={handleAddClass}
+                            onDeleteClass={handleDeleteClass}
+                            isLoading={isLoading}
+                        />;
+                    case 'belt_admin':
+                         return <BeltAdmin 
+                            beltRanks={beltRanks}
+                            isLoading={isLoading}
+                            db={db}
+                        />;
+                    default:
+                        return <StudentDirectory 
+                            students={students} 
+                            beltRankMap={beltRankMap} 
+                            attendanceMap={studentAttendanceMap} 
+                            onUpdateStudent={handleUpdateStudent}
+                            classMap={classMap}
+                        />;
+                }
+            };
+
+            return (
+                <div id="crm-app" className="min-h-screen flex flex-col">
+                    <Toolbar onNavigate={setCurrentView} onSignOut={() => auth.signOut()} />
+                    <main className="flex-1 p-8">
+                        {error && <div className="p-4 mb-4 bg-red-100 text-red-700 rounded-md text-center">{error}</div>}
+                        {renderMainContent()}
+                    </main>
+                </div>
+            );
+        }
+
+        // --- Shared Components ---
+
+        function LoadingScreen({ message }) {
+            return (
+                <div className="flex justify-center items-center h-96">
+                    <div className="spinner mr-3"></div>
+                    <p className="text-xl text-gray-700">{message}</p>
+                </div>
+            );
+        }
+
+        function Toolbar({ onNavigate, onSignOut }) {
+            return (
+                <header className="bg-white shadow-md p-4 flex justify-between items-center z-20">
+                    <h1 className="text-2xl font-bold text-cyan-700">Karate Dojo CRM</h1>
+                    <div className="flex items-center space-x-4">
+                        <nav className="space-x-4">
+                             <button onClick={() => onNavigate('directory')} className="text-gray-600 hover:text-cyan-700 font-medium">Students</button>
+                             <button onClick={() => onNavigate('schedule_admin')} className="text-gray-600 hover:text-cyan-700 font-medium">Schedule</button>
+                             <button onClick={() => onNavigate('belt_admin')} className="text-gray-600 hover:text-cyan-700 font-medium">Belts</button>
+                        </nav>
+                        <button onClick={onSignOut} className="px-4 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700">Logout</button>
+                    </div>
+                </header>
+            );
+        }
+        
+        function AuthPage() {
+            const [email, setEmail] = useState('');
+            const [password, setPassword] = useState('');
+            const [error, setError] = useState('');
+            const [isSigningIn, setIsSigningIn] = useState(false);
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                setError('');
+                setIsSigningIn(true);
+                try {
+                    // Only allowing login, staff must be created in Firebase Console
+                    await auth.signInWithEmailAndPassword(email, password);
+                } catch (err) {
+                    console.error("Login failed:", err);
+                    setError('Login failed. Please check your credentials and ensure Email/Password is enabled in Firebase Auth.');
+                } finally {
+                    setIsSigningIn(false);
+                }
+            };
+
+            return (
+                <div className="flex items-center justify-center min-h-screen -mt-20">
+                    <div className="w-full max-w-md p-8 bg-white rounded-xl shadow-2xl">
+                        <h1 className="text-3xl font-bold text-center text-gray-800">Staff Login</h1>
+                        <p className="text-gray-500 text-center mt-2 mb-6">Enter your Dojo Staff Credentials</p>
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <input 
+                                type="email" 
+                                value={email} 
+                                onChange={e => setEmail(e.target.value)} 
+                                placeholder="Email" 
+                                required 
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-cyan-500 focus:border-cyan-500" 
+                                disabled={isSigningIn}
+                            />
+                            <input 
+                                type="password" 
+                                value={password} 
+                                onChange={e => setPassword(e.target.value)} 
+                                placeholder="Password" 
+                                required 
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-cyan-500 focus:border-cyan-500" 
+                                disabled={isSigningIn}
+                            />
+                            <button 
+                                type="submit" 
+                                className="w-full px-6 py-3 text-lg text-white bg-cyan-600 rounded-lg hover:bg-cyan-700 flex items-center justify-center disabled:bg-gray-400"
+                                disabled={isSigningIn}
+                            >
+                                {isSigningIn ? (
+                                    <>
+                                        <div className="spinner mr-2"></div> Logging In...
+                                    </>
+                                ) : 'Log In'}
+                            </button>
+                            {error && <p className="text-red-500 text-sm text-center pt-2">{error}</p>}
+                        </form>
+                    </div>
+                </div>
+            );
+        }
+
+        // --- 3. Admin Components ---
+        
+        function StudentDirectory({ students, beltRankMap, attendanceMap, onUpdateStudent, classMap }) {
+            const [searchTerm, setSearchTerm] = useState('');
+            const [selectedStudent, setSelectedStudent] = useState(null);
+
+            const filteredStudents = useMemo(() => {
+                const term = searchTerm.toLowerCase();
+                if (!term) return students;
+                return students.filter(s => 
+                    s.firstName?.toLowerCase().includes(term) ||
+                    s.lastName?.toLowerCase().includes(term) ||
+                    s.phoneNumber?.includes(term) ||
+                    s.email?.toLowerCase().includes(term)
+                );
+            }, [searchTerm, students]);
+            
+            const handleSelectStudent = (student) => {
+                const logs = attendanceMap[student.id] || [];
+                const studentProfile = { 
+                    ...student, 
+                    logs: logs.sort((a, b) => (b.checkInDate.toDate().getTime()) - (a.checkInDate.toDate().getTime()))
+                };
+                setSelectedStudent(studentProfile);
+            };
+
+            return (
+                <div className="max-w-6xl mx-auto">
+                    <h2 className="text-3xl font-bold text-gray-800 mb-6">Student Directory ({students.length})</h2>
+                    <input 
+                        type="text" 
+                        value={searchTerm} 
+                        onChange={e => setSearchTerm(e.target.value)} 
+                        placeholder="Search by name, phone, or email..." 
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-6 focus:ring-cyan-500 focus:border-cyan-500"
+                    />
+
+                    <div className="bg-white rounded-lg shadow overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Belt Rank</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Points</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Check-in</th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                                {filteredStudents.map(student => (
+                                    <tr key={student.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => handleSelectStudent(student)}>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                            {student.firstName} {student.lastName}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                            {beltRankMap.get(student.beltRankId)?.name || 'N/A'}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-cyan-600">
+                                            {student.points || 0}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                             {attendanceMap[student.id]?.length > 0 ? formatDate(attendanceMap[student.id].sort((a, b) => b.checkInDate.toDate() - a.checkInDate.toDate())[0].checkInDate) : 'Never'}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                        {filteredStudents.length === 0 && (
+                            <div className="p-4 text-center text-gray-500">No students found matching your search.</div>
+                        )}
+                    </div>
+                    {selectedStudent && (
+                        <StudentProfileModal 
+                            student={selectedStudent} 
+                            beltRanks={beltRanks} 
+                            beltRankMap={beltRankMap}
+                            classMap={classMap}
+                            onClose={() => setSelectedStudent(null)}
+                            onUpdateStudent={onUpdateStudent}
+                        />
+                    )}
+                </div>
+            );
+        }
+
+        function StudentProfileModal({ student, beltRanks, beltRankMap, classMap, onClose, onUpdateStudent }) {
+            const [isEditing, setIsEditing] = useState(false);
+            const [newBeltRankId, setNewBeltRankId] = useState(student.beltRankId);
+            const [newPoints, setNewPoints] = useState(student.points || 0);
+
+            const handleSave = async () => {
+                await onUpdateStudent(student.id, { beltRankId: newBeltRankId, points: newPoints });
+                setIsEditing(false);
+                // Force modal refresh to show new data
+                onClose(); 
+            };
+            
+            const logs = student.logs || [];
+            
+            const calculateStreak = useCallback(() => {
+                if (logs.length === 0) return 0;
+
+                // Sort logs by date descending
+                const sortedLogs = logs.sort((a, b) => b.checkInDate.toDate() - a.checkInDate.toDate());
+                let streak = 0;
+                let currentDate = new Date();
+                currentDate.setHours(0, 0, 0, 0);
+
+                let logIndex = 0;
+
+                while (true) {
+                    let dayFound = false;
+                    const nextDate = new Date(currentDate);
+                    nextDate.setDate(currentDate.getDate() - 1); // Check yesterday
+                    
+                    // Filter logs for the current day being checked
+                    const logsForCurrentDay = sortedLogs.filter(log => {
+                        const logDate = log.checkInDate.toDate();
+                        logDate.setHours(0, 0, 0, 0);
+                        return logDate.getTime() === currentDate.getTime();
+                    });
+
+                    if (logsForCurrentDay.length > 0) {
+                        streak++;
+                        dayFound = true;
+                    } else if (streak > 0) {
+                         // Check if there are logs for the previous day
+                        const logsForNextDate = sortedLogs.filter(log => {
+                            const logDate = log.checkInDate.toDate();
+                            logDate.setHours(0, 0, 0, 0);
+                            return logDate.getTime() === nextDate.getTime();
+                        });
+                        
+                        // If we had a streak but the next day doesn't have a log, the streak is broken.
+                        if (logsForNextDate.length === 0) break;
+                    } else if (streak === 0) {
+                         // If no streak has started yet, check if the current date has a log
+                        if (logsForCurrentDay.length === 0) {
+                            // Move back one day at a time until a log is found or we go too far back
+                            currentDate = nextDate;
+                            if (currentDate < sortedLogs[sortedLogs.length - 1].checkInDate.toDate()) break;
+                            continue;
+                        } else {
+                            // Log found, streak starts.
+                            streak++;
+                            dayFound = true;
+                        }
+                    } else {
+                        break;
+                    }
+                    
+                    if (dayFound) {
+                        currentDate.setDate(currentDate.getDate() - 1);
+                    } else {
+                         // If we are checking the current day and no log found, streak is 0.
+                        if (streak === 0 && currentDate.getTime() === new Date().setHours(0,0,0,0)) break;
+                        break; // Streak broken.
+                    }
+                }
+                return streak;
+
+            }, [logs]);
+
+            const streak = calculateStreak();
+
+            return (
+                <div className="fixed inset-0 modal-overlay flex items-center justify-center p-4 z-50">
+                    <div className="bg-white rounded-lg shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+                        <div className="p-6 border-b flex justify-between items-center">
+                            <h3 className="text-2xl font-bold text-gray-800">{student.firstName} {student.lastName}</h3>
+                            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-3xl">&times;</button>
+                        </div>
+                        
+                        <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            
+                            {/* Stats Card */}
+                            <div className="lg:col-span-1 space-y-4">
+                                <InfoCard title="Contact Details">
+                                    <InfoItem label="Email" value={student.email} />
+                                    <InfoItem label="Phone" value={student.phoneNumber} />
+                                    <InfoItem label="Waiver Signed" value={student.waiverSigned ? "Yes" : "No"} />
+                                    <InfoItem label="Joined" value={formatDate(student.createdAt)} />
+                                </InfoCard>
+                                
+                                <InfoCard title="Performance">
+                                    <InfoItem label="Total Classes" value={logs.length} />
+                                    <InfoItem label="Current Streak" value={`${streak} day${streak !== 1 ? 's' : ''}`} />
+                                </InfoCard>
+                                
+                                <InfoCard title="Rank & Points">
+                                    {!isEditing ? (
+                                        <>
+                                            <InfoItem label="Belt Rank" value={beltRankMap.get(student.beltRankId)?.name || 'N/A'} />
+                                            <InfoItem label="Points" value={student.points || 0} />
+                                            <button onClick={() => setIsEditing(true)} className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 mt-2">Edit Rank/Points</button>
+                                        </>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            <div>
+                                                <label className="text-sm font-medium text-gray-700">Belt Rank</label>
+                                                <select value={newBeltRankId} onChange={e => setNewBeltRankId(e.target.value)} className="w-full px-3 py-2 border rounded-md">
+                                                    {beltRanks.map(b => (
+                                                        <option key={b.id} value={b.id}>{b.name}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="text-sm font-medium text-gray-700">Points</label>
+                                                <input type="number" value={newPoints} onChange={e => setNewPoints(parseInt(e.target.value) || 0)} className="w-full px-3 py-2 border rounded-md" />
+                                            </div>
+                                            <div className="flex space-x-2">
+                                                <button onClick={handleSave} className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">Save Changes</button>
+                                                <button onClick={() => setIsEditing(false)} className="flex-1 px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300">Cancel</button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </InfoCard>
+                            </div>
+                            
+                            {/* Attendance History */}
+                            <div className="lg:col-span-2">
+                                <InfoCard title="Attendance History" className="h-full">
+                                    <div className="max-h-[50vh] overflow-y-auto">
+                                        <table className="min-w-full divide-y divide-gray-200">
+                                            <thead className="bg-gray-50">
+                                                <tr>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Points</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="bg-white divide-y divide-gray-200">
+                                                {logs.map(log => (
+                                                    <tr key={log.id}>
+                                                        <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-700">{formatDate(log.checkInDate)}</td>
+                                                        <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-700">{classMap.get(log.classId)?.name || log.classNameWithDay || 'N/A'}</td>
+                                                        <td className="px-6 py-3 whitespace-nowrap text-sm text-green-600 font-medium">+{log.pointsEarned || 0}</td>
+                                                    </tr>
+                                                ))}
+                                                {logs.length === 0 && (
+                                                    <tr>
+                                                        <td colSpan="3" className="p-4 text-center text-gray-500">No attendance records found.</td>
+                                                    </tr>
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <button className="mt-4 w-full px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 text-sm">Manually Log/Delete Attendance</button>
+                                </InfoCard>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // --- Admin Components ---
+        
+        function ScheduleAdmin({ classes, onUpdateClass, onAddClass, onDeleteClass, isLoading }) {
+            const [isModalOpen, setIsModalOpen] = useState(false);
+            const [editingClass, setEditingClass] = useState(null);
+            
+            const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+            const handleEdit = (classItem) => {
+                setEditingClass(classItem);
+                setIsModalOpen(true);
+            };
+
+            const handleAdd = () => {
+                setEditingClass({ name: '', dayOfWeek: 'Monday', startTime: '17:00', endTime: '18:00', pointValue: 5 });
+                setIsModalOpen(true);
+            };
+
+            const sortedClasses = useMemo(() => {
+                return [...classes].sort((a, b) => {
+                    const dayA = getDayOfWeek(a.dayOfWeek);
+                    const dayB = getDayOfWeek(b.dayOfWeek);
+                    if (dayA !== dayB) return dayA - dayB;
+                    return a.startTime.localeCompare(b.startTime);
+                });
+            }, [classes]);
+
+            return (
+                <div className="max-w-6xl mx-auto">
+                    <h2 className="text-3xl font-bold text-gray-800 mb-6">Class Schedule Management ({classes.length} Sessions)</h2>
+                    <div className="flex justify-end mb-4">
+                         <button onClick={handleAdd} className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Add New Class</button>
+                    </div>
+
+                    <div className="bg-white rounded-lg shadow overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class Name</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Day</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Points</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                                {sortedClasses.map(c => (
+                                    <tr key={c.id} className="hover:bg-gray-50">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{c.name}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{c.dayOfWeek}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{formatTime(c.startTime)} - {formatTime(c.endTime)}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-cyan-600 font-medium">{c.pointValue}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                            <button onClick={() => handleEdit(c)} className="text-blue-600 hover:text-blue-800 mr-3">Edit</button>
+                                            <button onClick={() => onDeleteClass(c.id)} className="text-red-600 hover:text-red-800">Delete</button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                        {classes.length === 0 && (
+                            <div className="p-4 text-center text-gray-500">No classes defined yet. Add one above!</div>
+                        )}
+                    </div>
+
+                    {isModalOpen && (
+                        <ClassModal 
+                            classItem={editingClass}
+                            onClose={() => setIsModalOpen(false)}
+                            onSave={editingClass?.id ? onUpdateClass : onAddClass}
+                            daysOfWeek={daysOfWeek}
+                        />
+                    )}
+                </div>
+            );
+        }
+        
+        function ClassModal({ classItem, onClose, onSave, daysOfWeek }) {
+            const [name, setName] = useState(classItem.name || '');
+            const [dayOfWeek, setDayOfWeek] = useState(classItem.dayOfWeek || 'Monday');
+            const [startTime, setStartTime] = useState(classItem.startTime || '17:00');
+            const [endTime, setEndTime] = useState(classItem.endTime || '18:00');
+            const [pointValue, setPointValue] = useState(classItem.pointValue || 5);
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                onSave(classItem.id || null, { 
+                    name, 
+                    dayOfWeek, 
+                    startTime, 
+                    endTime, 
+                    pointValue: parseInt(pointValue) 
+                });
+                onClose();
+            };
+
+            return (
+                 <div className="fixed inset-0 modal-overlay flex items-center justify-center p-4 z-50">
+                    <div className="bg-white rounded-lg shadow-2xl w-full max-w-lg">
+                        <form onSubmit={handleSubmit}>
+                            <div className="p-6 border-b flex justify-between items-center">
+                                <h3 className="text-xl font-bold text-gray-800">{classItem.id ? 'Edit Class' : 'Add New Class'}</h3>
+                                <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600 text-3xl">&times;</button>
+                            </div>
+                            <div className="p-6 space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Class Name</label>
+                                    <input type="text" value={name} onChange={e => setName(e.target.value)} required className="w-full px-3 py-2 border rounded-md" />
+                                </div>
+                                <div className="grid grid-cols-3 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700">Day</label>
+                                        <select value={dayOfWeek} onChange={e => setDayOfWeek(e.target.value)} required className="w-full px-3 py-2 border rounded-md">
+                                            {daysOfWeek.map(day => <option key={day} value={day}>{day}</option>)}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700">Start Time (24h)</label>
+                                        <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} required className="w-full px-3 py-2 border rounded-md" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700">End Time (24h)</label>
+                                        <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} required className="w-full px-3 py-2 border rounded-md" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Points Awarded</label>
+                                    <input type="number" value={pointValue} onChange={e => setPointValue(e.target.value)} required className="w-full px-3 py-2 border rounded-md" />
+                                </div>
+                            </div>
+                            <div className="p-6 border-t flex justify-end space-x-2">
+                                <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-200 rounded-md">Cancel</button>
+                                <button type="submit" className="px-4 py-2 bg-cyan-600 text-white rounded-md hover:bg-cyan-700">Save Class</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            );
+        }
+
+        function BeltAdmin({ beltRanks, isLoading, db }) {
+            const [newBeltName, setNewBeltName] = useState('');
+            const [newBeltOrder, setNewBeltOrder] = useState(beltRanks.length > 0 ? beltRanks[beltRanks.length - 1].order + 10 : 10);
+            const [error, setError] = useState('');
+
+            useEffect(() => {
+                 // Suggest the next sequential order number when beltRanks updates
+                if (beltRanks.length > 0) {
+                    const maxOrder = beltRanks.reduce((max, belt) => Math.max(max, belt.order), 0);
+                    setNewBeltOrder(maxOrder + 10);
+                }
+            }, [beltRanks]);
+
+
+            const handleAddBelt = async (e) => {
+                e.preventDefault();
+                setError('');
+                if (!newBeltName || newBeltOrder < 0) {
+                    setError("Belt name and order are required.");
+                    return;
+                }
+                
+                try {
+                    await db.collection('beltRanks').add({
+                        name: newBeltName,
+                        order: parseInt(newBeltOrder),
+                    });
+                    setNewBeltName('');
+                } catch (e) {
+                    console.error("Error adding belt:", e);
+                    setError("Failed to add new belt rank.");
+                }
+            };
+            
+            const handleUpdateBelt = async (id, field, value) => {
+                 try {
+                    await db.collection('beltRanks').doc(id).update({ [field]: value });
+                } catch (e) {
+                    console.error("Error updating belt:", e);
+                    setError("Failed to update belt rank.");
+                }
+            };
+            
+             const handleDeleteBelt = async (id) => {
+                 if (!window.confirm("Are you sure you want to delete this belt rank? Students assigned to this belt will be shown as 'N/A'.")) return;
+                 try {
+                    await db.collection('beltRanks').doc(id).delete();
+                } catch (e) {
+                    console.error("Error deleting belt:", e);
+                    setError("Failed to delete belt rank.");
+                }
+            };
+
+            return (
+                <div className="max-w-4xl mx-auto">
+                    <h2 className="text-3xl font-bold text-gray-800 mb-6">Belt Rank Management</h2>
+                    
+                    {error && <div className="p-3 mb-4 bg-red-100 text-red-700 rounded-md">{error}</div>}
+
+                    {/* Add Belt Form */}
+                    <InfoCard title="Add New Belt Rank">
+                        <form onSubmit={handleAddBelt} className="grid grid-cols-4 gap-4 items-end">
+                            <div className="col-span-2">
+                                <label className="block text-sm font-medium text-gray-700">Rank Name</label>
+                                <input type="text" value={newBeltName} onChange={e => setNewBeltName(e.target.value)} required className="w-full px-3 py-2 border rounded-md" />
+                            </div>
+                             <div className="col-span-1">
+                                <label className="block text-sm font-medium text-gray-700">Order</label>
+                                <input type="number" value={newBeltOrder} onChange={e => setNewBeltOrder(parseInt(e.target.value) || 0)} required className="w-full px-3 py-2 border rounded-md" />
+                            </div>
+                            <button type="submit" className="col-span-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400" disabled={isLoading}>Add Rank</button>
+                        </form>
+                    </InfoCard>
+
+                    {/* Existing Belts List */}
+                    <div className="mt-8 bg-white rounded-lg shadow overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank Name</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order</th>
+                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                                {beltRanks.map(belt => (
+                                    <tr key={belt.id}>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                            <EditableField 
+                                                value={belt.name} 
+                                                onSave={(value) => handleUpdateBelt(belt.id, 'name', value)} 
+                                                type="text"
+                                            />
+                                        </td>
+                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                            <EditableField 
+                                                value={belt.order} 
+                                                onSave={(value) => handleUpdateBelt(belt.id, 'order', parseInt(value))} 
+                                                type="number"
+                                            />
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                                            <button onClick={() => handleDeleteBelt(belt.id)} className="text-red-600 hover:text-red-800">Delete</button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                        {beltRanks.length === 0 && (
+                             <div className="p-4 text-center text-gray-500">No belt ranks defined yet.</div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+        
+        // --- Belt Admin Sub-Components ---
+        
+        function EditableField({ value, onSave, type = 'text' }) {
+            const [isEditing, setIsEditing] = useState(false);
+            const [currentValue, setCurrentValue] = useState(value);
+            
+            useEffect(() => {
+                setCurrentValue(value);
+            }, [value]);
+
+            const handleKeyDown = (e) => {
+                if (e.key === 'Enter') {
+                    handleSave();
+                } else if (e.key === 'Escape') {
+                    setCurrentValue(value);
+                    setIsEditing(false);
+                }
+            };
+
+            const handleSave = () => {
+                onSave(currentValue);
+                setIsEditing(false);
+            };
+
+            if (isEditing) {
+                return (
+                    <input 
+                        type={type} 
+                        value={currentValue}
+                        onChange={e => setCurrentValue(e.target.value)}
+                        onBlur={handleSave}
+                        onKeyDown={handleKeyDown}
+                        autoFocus
+                        className="p-1 border rounded text-sm w-24"
+                    />
+                );
+            }
+
+            return (
+                <span onClick={() => setIsEditing(true)} className="hover:bg-gray-100 p-1 rounded cursor-pointer min-w-[5rem] inline-block">
+                    {value}
+                </span>
+            );
+        }
+
+
+        // --- Utility Components ---
+        const InfoCard = ({ title, children, className }) => (<div className={`bg-white p-6 rounded-lg shadow-sm border ${className || ''}`}><h3 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">{title}</h3><div className="space-y-3">{children}</div></div>);
+        const InfoItem = ({ label, value }) => (<div><p className="text-sm text-gray-500">{label}</p><p className="font-medium text-gray-800">{value || 'N/A'}</p></div>);
+
+        const container = document.getElementById('root');
+        const root = ReactDOM.createRoot(container);
+        root.render(<App />);
+    </script>
+</body>
+</html>
