@@ -22,7 +22,8 @@
         // --- 1. CONFIGURATION ---
         // REPLACE with your actual configuration object for ema-dojo
         const firebaseConfig = {
-            apiKey: "AIzaSyCuD0FvjxWfvQQglpDvNn6cBQW0qOxqSR_Q", // Placeholder API Key
+            // CORRECTED API KEY: Using the key found in the Intake Form file
+            apiKey: "AIzaSyCuD0FvjxWfvQQglpDvN6cBQW0qOxqSR_Q", 
             authDomain: "ema-dojo.firebaseapp.com",
             projectId: "ema-dojo",
             storageBucket: "ema-dojo.firebasestorage.app",
@@ -323,8 +324,8 @@
                             beltRanks={beltRanks} 
                             beltRankMap={beltRankMap} 
                             attendanceMap={studentAttendanceMap} 
-                            onUpdateStudent={handleUpdateStudent}
-                            onDeleteStudent={handleDeleteStudent} // Passed down
+                            onUpdateStudent={handleUpdateStudent} // Pass handler
+                            onDeleteStudent={handleDeleteStudent} // Pass handler
                             classMap={classMap}
                         />;
                     case 'schedule_admin':
@@ -355,8 +356,8 @@
                             beltRanks={beltRanks} 
                             beltRankMap={beltRankMap} 
                             attendanceMap={studentAttendanceMap} 
-                            onUpdateStudent={handleUpdateStudent}
-                            onDeleteStudent={handleDeleteStudent} // Passed down
+                            onUpdateStudent={handleUpdateStudent} // Pass handler
+                            onDeleteStudent={handleDeleteStudent} // Pass handler
                             classMap={classMap}
                         />;
                 }
@@ -557,7 +558,7 @@
                             beltRankMap={beltRankMap}
                             classMap={classMap}
                             onClose={() => setSelectedStudent(null)}
-                            onUpdateStudent={handleUpdateStudent}
+                            onUpdateStudent={onUpdateStudent}
                             onDeleteStudent={onDeleteStudent} // Pass delete handler
                             onViewProfile={handleSelectStudent} // Pass function to view another profile
                         />
@@ -880,7 +881,7 @@
             const [isModalOpen, setIsModalOpen] = useState(false);
             const [editingClass, setEditingClass] = useState(null);
             
-            const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+            const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
             const handleEdit = (classItem) => {
                 setEditingClass(classItem);
@@ -1070,6 +1071,7 @@
             };
             
              const handleDeleteBelt = async (id) => {
+                 // NOTE: window.confirm is replaced by CustomAlert in the App component, but this function needs an update
                  if (!window.confirm("Are you sure you want to delete this belt rank? Students assigned to this belt will be shown as 'N/A'.")) return;
                  try {
                     await db.collection('beltRanks').doc(id).delete();
