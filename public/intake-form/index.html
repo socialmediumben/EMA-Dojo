@@ -23,6 +23,7 @@
             line-height: 1.5; /* Increased line height for readability */
             color: #475569;
             margin-top: 0.5rem;
+            white-space: pre-wrap; /* Preserve line breaks from input for better formatting */
         }
         #signature-canvas {
             border: 2px dashed #cbd5e1;
@@ -66,11 +67,13 @@
 
             <form id="intake-form">
                 <fieldset id="form-fieldset"> 
+                    <!-- Section 1: Adult/Primary Guardian Information -->
                     <div class="mb-8">
-                        <h2 class="text-xl font-semibold text-slate-700 border-b pb-2 mb-4">1. Student Information</h2>
+                        <h2 class="text-xl font-semibold text-slate-700 border-b pb-2 mb-4">1. Adult Student or Primary Guardian Information</h2>
+                        <p class="text-sm text-slate-500 mb-4">This person is the primary contact and signing party for the contract.</p>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
-                                <label for="first-name" class="block text-sm font-medium text-slate-600 mb-1">Student's Preferred Name</label>
+                                <label for="first-name" class="block text-sm font-medium text-slate-600 mb-1">Preferred Name</label>
                                 <input type="text" id="first-name" name="first-name" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
                             </div>
                             <div>
@@ -96,25 +99,12 @@
                         </div>
                     </div>
 
-                    <!-- Guardian Information -->
-                    <div class="mb-8">
-                        <h2 class="text-xl font-semibold text-slate-700 border-b pb-2 mb-4">2. Guardian Information (If Student is Minor)</h2>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label for="guardian1-name" class="block text-sm font-medium text-slate-600 mb-1">Parent/Guardian 1 Name</label>
-                                <input type="text" id="guardian1-name" name="guardian1-name" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
-                            </div>
-                            <div>
-                                <label for="guardian2-name" class="block text-sm font-medium text-slate-600 mb-1">Parent/Guardian 2 Name</label>
-                                <input type="text" id="guardian2-name" name="guardian2-name" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
-                            </div>
-                        </div>
-                    </div>
+                    <!-- REMOVED SECTION 2: Guardian Information (Parent/Guardian 1/2) -->
                     
-                    <!-- Emergency Contacts -->
+                    <!-- Section 2: Emergency Contacts (was Section 3) -->
                     <div class="mb-8">
-                        <h2 class="text-xl font-semibold text-slate-700 border-b pb-2 mb-4">3. Emergency Contacts</h2>
-                        <p class="text-sm text-slate-500 mb-4">Please provide two emergency contacts besides the primary guardian.</p>
+                        <h2 class="text-xl font-semibold text-slate-700 border-b pb-2 mb-4">2. Emergency Contacts</h2>
+                        <p class="text-sm text-slate-500 mb-4">Please provide two emergency contacts besides the person in Section 1.</p>
                         
                         <!-- Contact 1 -->
                         <div class="p-4 border rounded-lg bg-gray-50 mb-4">
@@ -156,10 +146,10 @@
                     </div>
 
 
-                    <!-- Minors Section (Simplified) -->
+                    <!-- Section 3: Minor Student Information (was Section 4) -->
                     <div class="mb-8">
-                        <h2 class="text-xl font-semibold text-slate-700 border-b pb-2 mb-4">4. Minor Student Information</h2>
-                        <p class="text-sm text-slate-500 mb-4">If signing for one or more minors, please add their details below.</p>
+                        <h2 class="text-xl font-semibold text-slate-700 border-b pb-2 mb-4">3. Minor Student Information</h2>
+                        <p class="text-sm text-slate-500 mb-4">If signing for one or more minors, please add their details below. The adult in Section 1 will be recorded as the Primary Guardian.</p>
                         <div id="minors-container">
                             <!-- Dynamic minor forms will be injected here -->
                         </div>
@@ -171,25 +161,62 @@
                     </div>
 
                     
+                    <!-- Section 4: Contract (was Section 5) -->
                     <div class="mb-8">
-                        <h2 class="text-xl font-semibold text-slate-700 border-b pb-2 mb-4">5. ELITE MARTIAL ARTS MEMBERSHIP AGREEMENT</h2>
+                        <h2 class="text-xl font-semibold text-slate-700 border-b pb-2 mb-4">4. ELITE MARTIAL ARTS MEMBERSHIP AGREEMENT</h2>
                         <details>
                             <summary class="text-blue-600 hover:underline">Click to Read Full Contract & Waiver</summary>
                             <div class="waiver-box">
                                 <strong>ELITE MARTIAL ARTS DOJO STUDENT MEMBERSHIP AGREEMENT</strong><br>
                                 Elite Martial Arts Dojo (E.M.A. Dojo) and its representatives provide Martial Arts instructions, including training and sparring. Each student represents that he/she is physically fit to participate in Martial Arts training and sparring classes and other instructions that may be requested. Each student is provided with the separate release of a liability statement that he/she (or legal guardian) has acknowledged and signed. In addition, each student agrees to faithfully comply with the rules and regulations of E.M.A. Dojo. E.M.A. Dojo reserves the right to terminate any student in its sole discretion, without notice, who does not comply with E.M.A. Dojo’s rules and regulations.<br><br>
                                 
-                                <strong>MEMBERSHIP AND TUITION AGREEMENT:</strong><br>
-                                It is understood that the student’s participation is on a month-to-month basis. The program shall consist of two (2) lessons per week, not to exceed eight (8) lessons per month, at the monthly price of $139, based on the schedule offered by E.M.A. Dojo, which may change at the discretion of E.M.A. Dojo. The first student’s fee is $139, after which the sibling(s) monthly fee is reduced to $119. One lesson per week only is available at the monthly fee of $119.<br>
-                                EMA shall require payment upon enrollment for the first and last month of class as an initial payment. EMA shall then debit your account on a month-to-month basis until notified that the student no longer wishes to participate in classes. Upon timely notification that the student wishes to terminate membership with EMA, you will not be charged for the last month due to the credit received from the initial payment. You must notify EMA 30 days prior to the student's termination to receive credit for the last month. If we do not receive timely notification, EMA will continue to debit your account with the understanding that the student wishes to proceed with instruction. You will nonetheless still receive the credit for the last month and be able to take classes during that time. There are no partial refunds or pro-rated monthly fees. It is the student’s responsibility to keep track of the class schedule. Each student is accountable for his/her own participation. The monthly fee paid is in the form of class membership, therefore, there are no refunds for missed or partial lessons. You may cancel this agreement with a written notice of cancellation without any penalty or further obligation. Such notice is to be delivered to me in person and is available upon request.<br><br>
+                                <strong>I. MEMBERSHIP AND TUITION AGREEMENT:</strong><br>
+                                1. It is understood that the student’s participation is on a month-to-month basis.<br>
+                                2. The program shall consist of two (2) lessons per week, not to exceed eight (8) lessons per month, at the monthly price of $139, based on the schedule offered by E.M.A. Dojo, which may change at the discretion of E.M.A. Dojo.<br>
+                                3. The first student’s fee is $139, after which the sibling(s) monthly fee is reduced to $119.<br>
+                                4. One lesson per week only is available at the monthly fee of $119.<br>
+                                5. EMA shall require payment upon enrollment for the first and last month of class as an initial payment.<br>
+                                6. EMA shall then debit your account on a month-to-month basis until notified that the student no longer wishes to participate in classes.<br>
+                                7. Upon timely notification that the student wishes to terminate membership with EMA, you will not be charged for the last month due to the credit received from the initial payment.<br>
+                                8. You must notify EMA 30 days prior to the student's termination to receive credit for the last month.<br>
+                                9. If we do not receive timely notification, EMA will continue to debit your account with the understanding that the student wishes to proceed with instruction.<br>
+                                10. You will nonetheless still receive the credit for the last month and be able to take classes during that time.<br>
+                                11. There are no partial refunds or pro-rated monthly fees.<br>
+                                12. It is the student’s responsibility to keep track of the class schedule. Each student is accountable for his/her own participation. The monthly fee paid is in the form of class membership, therefore, there are no refunds for missed or partial lessons.<br>
+                                13. You may cancel this agreement with a written notice of cancellation without any penalty or further obligation. Such notice is to be delivered to me in person and is available upon request.<br><br>
                                 
-                                <strong>FREEZE POLICY:</strong> We don’t freeze the account under any circumstances.<br><br>
+                                <strong>II. FREEZE POLICY:</strong> We don’t freeze the account under any circumstances.<br><br>
                                 
-                                <strong>ELITE MARTIAL ARTS DOJO RELEASE AND WAIVER OF LIABILITY:</strong><br>
-                                In consideration of being enrolled in the Elite Martial Arts Dojo programs, the student (or legal guardian if under 18 years of age), agrees to the following: I inspected the facilities and equipment being used and I believe that they are safe. I fully understand and acknowledge that: There are risks and dangers associated with participation in all types of Martial Arts events and activities, which could result in bodily injury partial and/or total disability, paralysis and death. The social economic losses and/or damages, which could result from these risks and dangers described above, could be severe. These risks and dangers may be caused by the action, inaction or negligence of the participant or the action, inaction or negligence of others, including, but not limited to the E.M.A. Dojo’s employees, agents, representatives, successors and assigns. There may be other risks not known or are not reasonably foreseeable at this time. I accept and assume such risks and responsibility for the losses and/or damages following such injury, disability, paralysis or death, however caused and whether caused in whole or in part by the negligence of E.M.A. Dojo, its employees, agents, representatives, successors or assigns. I represent and warrant to Elite Martial Arts Dojo that I am in good physical condition and have no medical reason or impairment that could prevent me from the intended participation in the Martial Arts training and sparring and I acknowledge that E.M.A. Dojo has not given me any medical advice before I joined the program related to my physical condition and/or ability to use the facilities and services of E.M.A. Dojo. I acknowledge and agree that I will discuss any health or medical concerns with my physician or other health professional before joining the E.M.A. Dojo program or using its facilities. I understand that the Elite Martial Arts Dojo Karate program includes FULL-CONTACT Karate. In addition, other disciplines are also practiced. They include, but not limited to: boxing, kickboxing, Jiu Jitsu, Mixed Martial Arts and wrestling. I agree that if I engage in any Martial Arts training or sparring or use any equipment on the premises, I do so at my own risk and assume the risk of any and all injury or damage while engaging or resulting from such Martial Arts training or sparring or use. My assumption of risk includes, without limitation, my use of any and all equipment. I also agree to assume the risk in my participation of any Martial Arts activity, class or one-on-one instruction, or event. I agree that I voluntarily participate in the aforementioned activities and assume all risk of injury, illness, damage, or loss to me or my property that might result, including, without limitation, any loss or theft of any personal property. I agree on behalf of myself (and my personal representatives, heirs, executors, agents and assigns) to forever release and discharge E.M.A. Dojo (including, but not limited to E.M.A. Dojo employees, agents, representatives, successors, and assigns) from any and all claims or causes of action arising out of the negligence of E.M.A. Dojo, whether active or passive or any of the employees, agents, representatives, successors, and assigns. By execution of this agreement, I agree to indemnify and hold E.M.A. Dojo harmless from any loss, liability, damage, or cost E.M.A. Dojo may incur due to my presence at the E.M.A. Dojo facility.<br><br>
+                                <strong>III. ELITE MARTIAL ARTS DOJO RELEASE AND WAIVER OF LIABILITY:</strong><br>
+                                In consideration of being enrolled in the Elite Martial Arts Dojo programs, the student (or legal guardian if under 18 years of age), agrees to the following: I inspected the facilities and equipment being used and I believe that they are safe.<br>
                                 
-                                **RELEASE AND WAIVER (CONTINUED):**<br>
-                                I acknowledge that I have carefully read this waiver and release and fully understand that it is a release of liability, and express assumption of risk and indemnity agreement. I am aware and agree that by executing this waiver and release, I am giving up my right to bring legal action or assert a claim against E.M.A. Dojo for its negligence or for any defective product on its premises. I have read and voluntarily signed the waiver and release and further agree that no oral representation, statement, or inducement apart from the foregoing written agreement have been made. I agree that the above representations are contractually binding. I have read this Release and Waiver of Liability, assumption of risk and indemnity agreement, fully understand its terms, understand that I have given up substantial rights by signing it, and have signed it freely and voluntarily without any inducement, assurance, or guarantee being made to me and intend my signature to be complete and unconditional release of all liability to the greatest extent allowed by law.
+                                <br>
+                                <strong>A. ACKNOWLEDGEMENT OF RISKS:</strong><br>
+                                I fully understand and acknowledge that:<br>
+                                1. There are risks and dangers associated with participation in all types of Martial Arts events and activities, which could result in bodily injury partial and/or total disability, paralysis and death.<br>
+                                2. The social economic losses and/or damages, which could result from these risks and dangers described above, could be severe.<br>
+                                3. These risks and dangers may be caused by the action, inaction or negligence of the participant or the action, inaction or negligence of others, including, but not limited to the E.M.A. Dojo’s employees, agents, representatives, successors and assigns.<br>
+                                4. There may be other risks not known or are not reasonably foreseeable at this time.<br>
+                                
+                                <br>
+                                <strong>B. ASSUMPTION OF RISK AND RELEASE:</strong><br>
+                                1. I accept and assume such risks and responsibility for the losses and/or damages following such injury, disability, paralysis or death, however caused and whether caused in whole or in part by the negligence of E.M.A. Dojo, its employees, agents, representatives, successors or assigns.<br>
+                                2. I represent and warrant to Elite Martial Arts Dojo that I am in good physical condition and have no medical reason or impairment that could prevent me from the intended participation in the Martial Arts training and sparring and I acknowledge that E.M.A. Dojo has not given me any medical advice before I joined the program related to my physical condition and/or ability to use the facilities and services of E.M.A. Dojo.<br>
+                                3. I acknowledge and agree that I will discuss any health or medical concerns with my physician or other health professional before joining the E.M.A. Dojo program or using its facilities.<br>
+                                4. I understand that the Elite Martial Arts Dojo Karate program includes FULL-CONTACT Karate. In addition, other disciplines are also practiced. They include, but not limited to: boxing, kickboxing, Jiu Jitsu, Mixed Martial Arts and wrestling.<br>
+                                5. I agree that if I engage in any Martial Arts training or sparring or use any equipment on the premises, I do so at my own risk and assume the risk of any and all injury or damage while engaging or resulting from such Martial Arts training or sparring or use.<br>
+                                6. My assumption of risk includes, without limitation, my use of any and all equipment.<br>
+                                7. I also agree to assume the risk in my participation of any Martial Arts activity, class or one-on-one instruction, or event.<br>
+                                8. I agree that I voluntarily participate in the aforementioned activities and assume all risk of injury, illness, damage, or loss to me or my property that might result, including, without limitation, any loss or theft of any personal property.<br>
+                                9. I agree on behalf of myself (and my personal representatives, heirs, executors, agents and assigns) to forever release and discharge E.M.A. Dojo (including, but not limited to E.M.A. Dojo employees, agents, representatives, successors, and assigns) from any and all claims or causes of action arising out of the negligence of E.M.A. Dojo, whether active or passive or any of the employees, agents, representatives, successors, and assigns.<br>
+                                10. By execution of this agreement, I agree to indemnify and hold E.M.A. Dojo harmless from any loss, liability, damage, or cost E.M.A. Dojo may incur due to my presence at the E.M.A. Dojo facility.<br><br>
+                                
+                                <strong>C. RELEASE AND WAIVER (FINAL ACKNOWLEDGMENT):</strong><br>
+                                1. I acknowledge that I have carefully read this waiver and release and fully understand that it is a release of liability, and express assumption of risk and indemnity agreement.<br>
+                                2. I am aware and agree that by executing this waiver and release, I am giving up my right to bring legal action or assert a claim against E.M.A. Dojo for its negligence or for any defective product on its premises.<br>
+                                3. I have read and voluntarily signed the waiver and release and further agree that no oral representation, statement, or inducement apart from the foregoing written agreement have been made.<br>
+                                4. I agree that the above representations are contractually binding.<br>
+                                5. I have read this Release and Waiver of Liability, assumption of risk and indemnity agreement, fully understand its terms, understand that I have given up substantial rights by signing it, and have signed it freely and voluntarily without any inducement, assurance, or guarantee being made to me and intend my signature to be complete and unconditional release of all liability to the greatest extent allowed by law.
                             </div>
                         </details>
                         <div class="mt-4">
@@ -200,8 +227,9 @@
                         </div>
                     </div>
 
+                    <!-- Section 5: Digital Signature (was Section 6) -->
                     <div class="mb-8">
-                        <h2 class="text-xl font-semibold text-slate-700 border-b pb-2 mb-4">6. Digital Signature</h2>
+                        <h2 class="text-xl font-semibold text-slate-700 border-b pb-2 mb-4">5. Digital Signature</h2>
                         <div class="bg-slate-50 p-2 rounded-lg">
                             <canvas id="signature-canvas"></canvas>
                         </div>
@@ -376,14 +404,14 @@
                     birthday: formData.get('birthday'),
                     email: primaryEmail,
                     phoneNumber: primaryPhoneNumber,
-                    isGuardian: minorCount > 0,
+                    // Check if any minors were added to determine if this person is a guardian
+                    isGuardian: minorCount > 0, 
                     waiverSigned: true,
                     signedAt: firebase.firestore.FieldValue.serverTimestamp(),
                     signatureData: signatureDataURL, // Storing Base64 data directly
                     
-                    // NEW: Guardian and Emergency Contact Info
-                    guardian1Name: formData.get('guardian1-name') || '',
-                    guardian2Name: formData.get('guardian2-name') || '',
+                    // NEW: Guardian fields are removed, data flow relies on Section 1 fields
+                    // The following fields remain the same (Emergency Contacts)
                     emergencyNotify1Name: formData.get('emergency1-name') || '',
                     emergencyNotify1Relationship: formData.get('emergency1-relationship') || '',
                     emergencyNotify1Phone: formData.get('emergency1-phone') || '',
@@ -410,6 +438,8 @@
                         email: `${primaryEmail.split('@')[0]}+minor${i}@${primaryEmail.split('@')[1]}`, // Unique email for minors
                         phoneNumber: primaryPhoneNumber, // Same phone as guardian
                         isMinor: true,
+                        // Primary Guardian Name is the adult who filled out Section 1
+                        guardianName: `${adultData.firstName} ${adultData.lastName}`, 
                         guardianPhoneNumber: primaryPhoneNumber,
                         waiverSigned: true,
                         signedAt: firebase.firestore.FieldValue.serverTimestamp(),
