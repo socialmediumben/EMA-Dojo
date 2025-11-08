@@ -72,18 +72,27 @@
                         <h2 class="text-xl font-semibold text-slate-700 border-b pb-2 mb-4">1. Adult Student or Primary Guardian Information</h2>
                         <p class="text-sm text-slate-500 mb-4">This person is the primary contact and signing party for the contract.</p>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            
+                            <!-- 1. Legal First Name (Required for primary student/guardian) -->
                             <div>
-                                <label for="first-name" class="block text-sm font-medium text-slate-600 mb-1">Preferred Name</label>
-                                <input type="text" id="first-name" name="first-name" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                                <label for="legal-first-name" class="block text-sm font-medium text-slate-600 mb-1">Legal First Name</label>
+                                <input type="text" id="legal-first-name" name="legal-first-name" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
                             </div>
+
+                            <!-- 2. Last Name -->
                             <div>
                                 <label for="last-name" class="block text-sm font-medium text-slate-600 mb-1">Last Name</label>
                                 <input type="text" id="last-name" name="last-name" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
                             </div>
-                             <div>
-                                <label for="legal-name" class="block text-sm font-medium text-slate-600 mb-1">Legal Name <span class="text-slate-400">(If Different)</span></label>
-                                <input type="text" id="legal-name" name="legal-name" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+
+                             <!-- 3. Preferred Name (Optional, if different) -->
+                            <div>
+                                <label for="preferred-name" class="block text-sm font-medium text-slate-600 mb-1">Preferred Name <span class="text-slate-400">(If different from legal name)</span></label>
+                                <input type="text" id="preferred-name" name="preferred-name" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
                             </div>
+                            
+                            <!-- Original Legal Name field removed as it's now primary -->
+
                              <div>
                                 <label for="birthday" class="block text-sm font-medium text-slate-600 mb-1">Date of Birth</label>
                                 <input type="date" id="birthday" name="birthday" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
@@ -99,9 +108,7 @@
                         </div>
                     </div>
 
-                    <!-- REMOVED SECTION 2: Guardian Information (Parent/Guardian 1/2) -->
-                    
-                    <!-- Section 2: Emergency Contacts (was Section 3) -->
+                    <!-- Section 2: Emergency Contacts -->
                     <div class="mb-8">
                         <h2 class="text-xl font-semibold text-slate-700 border-b pb-2 mb-4">2. Emergency Contacts</h2>
                         <p class="text-sm text-slate-500 mb-4">Please provide two emergency contacts besides the person in Section 1.</p>
@@ -146,7 +153,7 @@
                     </div>
 
 
-                    <!-- Section 3: Minor Student Information (was Section 4) -->
+                    <!-- Section 3: Minor Student Information -->
                     <div class="mb-8">
                         <h2 class="text-xl font-semibold text-slate-700 border-b pb-2 mb-4">3. Minor Student Information</h2>
                         <p class="text-sm text-slate-500 mb-4">If signing for one or more minors, please add their details below. The adult in Section 1 will be recorded as the Primary Guardian.</p>
@@ -161,7 +168,7 @@
                     </div>
 
                     
-                    <!-- Section 4: Contract (was Section 5) -->
+                    <!-- Section 4: Contract -->
                     <div class="mb-8">
                         <h2 class="text-xl font-semibold text-slate-700 border-b pb-2 mb-4">4. ELITE MARTIAL ARTS MEMBERSHIP AGREEMENT</h2>
                         <details>
@@ -227,7 +234,7 @@
                         </div>
                     </div>
 
-                    <!-- Section 5: Digital Signature (was Section 6) -->
+                    <!-- Section 5: Digital Signature -->
                     <div class="mb-8">
                         <h2 class="text-xl font-semibold text-slate-700 border-b pb-2 mb-4">5. Digital Signature</h2>
                         <div class="bg-slate-50 p-2 rounded-lg">
@@ -313,18 +320,26 @@
                 <div class="mt-6 p-4 border rounded-lg bg-gray-50" id="minor-section-${minorCount}">
                     <h3 class="text-lg font-semibold text-slate-600 mb-4">Minor Student ${minorCount} Information (Under 18)</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        
+                        <!-- 1. Legal First Name (Required) -->
                         <div>
-                            <label for="first-name-minor-${minorCount}" class="block text-sm font-medium text-slate-600 mb-1">Preferred Name</label>
-                            <input type="text" id="first-name-minor-${minorCount}" name="first-name-minor-${minorCount}" required class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                            <label for="legal-first-name-minor-${minorCount}" class="block text-sm font-medium text-slate-600 mb-1">Legal First Name</label>
+                            <input type="text" id="legal-first-name-minor-${minorCount}" name="legal-first-name-minor-${minorCount}" required class="w-full px-4 py-2 border border-slate-300 rounded-lg">
                         </div>
+
+                        <!-- 2. Last Name -->
                         <div>
                             <label for="last-name-minor-${minorCount}" class="block text-sm font-medium text-slate-600 mb-1">Last Name</label>
                             <input type="text" id="last-name-minor-${minorCount}" name="last-name-minor-${minorCount}" required class="w-full px-4 py-2 border border-slate-300 rounded-lg">
                         </div>
+
+                        <!-- 3. Preferred Name (Optional, if different) -->
                         <div>
-                            <label for="legal-name-minor-${minorCount}" class="block text-sm font-medium text-slate-600 mb-1">Legal Name <span class="text-slate-400">(If Different)</span></label>
-                            <input type="text" id="legal-name-minor-${minorCount}" name="legal-name-minor-${minorCount}" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                            <label for="preferred-name-minor-${minorCount}" class="block text-sm font-medium text-slate-600 mb-1">Preferred Name <span class="text-slate-400">(If different from legal name)</span></label>
+                            <input type="text" id="preferred-name-minor-${minorCount}" name="preferred-name-minor-${minorCount}" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
                         </div>
+
+                        <!-- Birthday -->
                         <div>
                             <label for="birthday-minor-${minorCount}" class="block text-sm font-medium text-slate-600 mb-1">Birthday</label>
                             <input type="date" id="birthday-minor-${minorCount}" name="birthday-minor-${minorCount}" required class="w-full px-4 py-2 border border-slate-300 rounded-lg">
@@ -392,15 +407,21 @@
             const primaryPhoneNumber = formData.get('phone').replace(/\D/g, '');
             const primaryEmail = formData.get('email');
             
+            // Determine which name to use as the primary student/guardian name (Legal or Preferred)
+            const legalFirstName = formData.get('legal-first-name');
+            const preferredFirstName = formData.get('preferred-name') || legalFirstName;
+            const finalFirstName = preferredFirstName; 
+            const finalLegalName = legalFirstName; // Stored separately for legal purposes
+
             try {
                 // 1. Capture Signature Data URL (REPLACED STORAGE LOGIC)
                 const signatureDataURL = canvas.toDataURL('image/png');
 
                 // 2. Process Guardian (or Adult Student)
                 const adultData = {
-                    firstName: formData.get('first-name'),
+                    firstName: finalFirstName, // Preferred name used for CRM display
                     lastName: formData.get('last-name'),
-                    legalName: formData.get('legal-name') || '',
+                    legalName: finalLegalName, // Legal name stored as separate field
                     birthday: formData.get('birthday'),
                     email: primaryEmail,
                     phoneNumber: primaryPhoneNumber,
@@ -410,8 +431,7 @@
                     signedAt: firebase.firestore.FieldValue.serverTimestamp(),
                     signatureData: signatureDataURL, // Storing Base64 data directly
                     
-                    // NEW: Guardian fields are removed, data flow relies on Section 1 fields
-                    // The following fields remain the same (Emergency Contacts)
+                    // Emergency Contacts
                     emergencyNotify1Name: formData.get('emergency1-name') || '',
                     emergencyNotify1Relationship: formData.get('emergency1-relationship') || '',
                     emergencyNotify1Phone: formData.get('emergency1-phone') || '',
@@ -430,10 +450,14 @@
                 // 3. Process Minors
                 const minorPromises = [];
                 for (let i = 1; i <= minorCount; i++) {
+                    // Get minor's specific name fields
+                    const minorLegalFirstName = formData.get(`legal-first-name-minor-${i}`);
+                    const minorPreferredFirstName = formData.get(`preferred-name-minor-${i}`) || minorLegalFirstName;
+
                     const minorData = {
-                        firstName: formData.get(`first-name-minor-${i}`),
+                        firstName: minorPreferredFirstName, // Preferred name used for CRM display
                         lastName: formData.get(`last-name-minor-${i}`),
-                        legalName: formData.get(`legal-name-minor-${i}`) || '',
+                        legalName: minorLegalFirstName, // Legal name stored as separate field
                         birthday: formData.get(`birthday-minor-${i}`),
                         email: `${primaryEmail.split('@')[0]}+minor${i}@${primaryEmail.split('@')[1]}`, // Unique email for minors
                         phoneNumber: primaryPhoneNumber, // Same phone as guardian
