@@ -13,16 +13,17 @@
             font-family: 'Inter', sans-serif;
         }
         .waiver-box {
-            height: 200px;
+            height: 250px; /* Increased height to fit more contract text */
             background-color: #f8fafc;
             border: 1px solid #e2e8f0;
             padding: 1rem;
             border-radius: 0.5rem;
             overflow-y: auto;
             font-size: 0.875rem;
-            line-height: 1.25rem;
+            line-height: 1.5; /* Increased line height for readability */
             color: #475569;
             margin-top: 0.5rem;
+            white-space: pre-wrap; /* Preserve line breaks from input for better formatting */
         }
         #signature-canvas {
             border: 2px dashed #cbd5e1;
@@ -60,30 +61,40 @@
         <!-- Main Application View -->
         <div id="main-app-view">
             <div class="text-center mb-8">
-                <h1 class="text-3xl font-bold text-slate-800">Karate Dojo Enrollment</h1>
-                <p class="text-slate-500 mt-2">New Student Intake & Waiver</p>
+                <h1 class="text-3xl font-bold text-slate-800">Elite Martial Arts Dojo Enrollment</h1>
+                <p class="text-slate-500 mt-2">New Student Membership Agreement & Waiver</p>
             </div>
 
             <form id="intake-form">
-                <!-- Fieldset is enabled by default now -->
                 <fieldset id="form-fieldset"> 
+                    <!-- Section 1: Adult/Primary Guardian Information -->
                     <div class="mb-8">
-                        <h2 class="text-xl font-semibold text-slate-700 border-b pb-2 mb-4">1. Student/Guardian Information</h2>
+                        <h2 class="text-xl font-semibold text-slate-700 border-b pb-2 mb-4">1. Adult Student or Primary Guardian Information</h2>
+                        <p class="text-sm text-slate-500 mb-4">This person is the primary contact and signing party for the contract.</p>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            
+                            <!-- 1. Legal First Name (Required for primary student/guardian) -->
                             <div>
-                                <label for="first-name" class="block text-sm font-medium text-slate-600 mb-1">Preferred Name</label>
-                                <input type="text" id="first-name" name="first-name" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                                <label for="legal-first-name" class="block text-sm font-medium text-slate-600 mb-1">Legal First Name</label>
+                                <input type="text" id="legal-first-name" name="legal-first-name" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
                             </div>
+
+                            <!-- 2. Last Name -->
                             <div>
                                 <label for="last-name" class="block text-sm font-medium text-slate-600 mb-1">Last Name</label>
                                 <input type="text" id="last-name" name="last-name" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
                             </div>
-                             <div>
-                                <label for="legal-name" class="block text-sm font-medium text-slate-600 mb-1">Legal Name <span class="text-slate-400">(If Different)</span></label>
-                                <input type="text" id="legal-name" name="legal-name" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+
+                             <!-- 3. Preferred Name (Optional, if different) -->
+                            <div>
+                                <label for="preferred-name" class="block text-sm font-medium text-slate-600 mb-1">Preferred Name <span class="text-slate-400">(If different from legal name)</span></label>
+                                <input type="text" id="preferred-name" name="preferred-name" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
                             </div>
+                            
+                            <!-- Original Legal Name field removed as it's now primary -->
+
                              <div>
-                                <label for="birthday" class="block text-sm font-medium text-slate-600 mb-1">Birthday</label>
+                                <label for="birthday" class="block text-sm font-medium text-slate-600 mb-1">Date of Birth</label>
                                 <input type="date" id="birthday" name="birthday" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
                             </div>
                             <div>
@@ -91,15 +102,61 @@
                                 <input type="email" id="email" name="email" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
                             </div>
                             <div>
-                                <label for="phone" class="block text-sm font-medium text-slate-600 mb-1">Phone Number</label>
+                                <label for="phone" class="block text-sm font-medium text-slate-600 mb-1">Cell Phone Number (Primary Contact)</label>
                                 <input type="tel" id="phone" name="phone" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
                             </div>
                         </div>
                     </div>
 
-                    <!-- Minors Section (Simplified) -->
+                    <!-- Section 2: Emergency Contacts -->
                     <div class="mb-8">
-                        <h2 class="text-xl font-semibold text-slate-700 border-b pb-2 mb-4">Minors <span class="text-slate-400 text-base">(If signing for children)</span></h2>
+                        <h2 class="text-xl font-semibold text-slate-700 border-b pb-2 mb-4">2. Emergency Contacts</h2>
+                        <p class="text-sm text-slate-500 mb-4">Please provide two emergency contacts besides the person in Section 1.</p>
+                        
+                        <!-- Contact 1 -->
+                        <div class="p-4 border rounded-lg bg-gray-50 mb-4">
+                            <h3 class="font-semibold text-slate-700 mb-3">Contact 1</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label for="emergency1-name" class="block text-sm font-medium text-slate-600 mb-1">Full Name</label>
+                                    <input type="text" id="emergency1-name" name="emergency1-name" required class="w-full px-3 py-2 border rounded-lg">
+                                </div>
+                                <div>
+                                    <label for="emergency1-relationship" class="block text-sm font-medium text-slate-600 mb-1">Relationship</label>
+                                    <input type="text" id="emergency1-relationship" name="emergency1-relationship" required class="w-full px-3 py-2 border rounded-lg">
+                                </div>
+                                <div>
+                                    <label for="emergency1-phone" class="block text-sm font-medium text-slate-600 mb-1">Cell Phone</label>
+                                    <input type="tel" id="emergency1-phone" name="emergency1-phone" required class="w-full px-3 py-2 border rounded-lg">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Contact 2 -->
+                        <div class="p-4 border rounded-lg bg-gray-50">
+                            <h3 class="font-semibold text-slate-700 mb-3">Contact 2</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label for="emergency2-name" class="block text-sm font-medium text-slate-600 mb-1">Full Name</label>
+                                    <input type="text" id="emergency2-name" name="emergency2-name" required class="w-full px-3 py-2 border rounded-lg">
+                                </div>
+                                <div>
+                                    <label for="emergency2-relationship" class="block text-sm font-medium text-slate-600 mb-1">Relationship</label>
+                                    <input type="text" id="emergency2-relationship" name="emergency2-relationship" required class="w-full px-3 py-2 border rounded-lg">
+                                </div>
+                                <div>
+                                    <label for="emergency2-phone" class="block text-sm font-medium text-slate-600 mb-1">Cell Phone</label>
+                                    <input type="tel" id="emergency2-phone" name="emergency2-phone" required class="w-full px-3 py-2 border rounded-lg">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <!-- Section 3: Minor Student Information -->
+                    <div class="mb-8">
+                        <h2 class="text-xl font-semibold text-slate-700 border-b pb-2 mb-4">3. Minor Student Information</h2>
+                        <p class="text-sm text-slate-500 mb-4">If signing for one or more minors, please add their details below. The adult in Section 1 will be recorded as the Primary Guardian.</p>
                         <div id="minors-container">
                             <!-- Dynamic minor forms will be injected here -->
                         </div>
@@ -110,37 +167,76 @@
                         </div>
                     </div>
 
-                    <!-- Removed Section 2: About You -->
                     
+                    <!-- Section 4: Contract -->
                     <div class="mb-8">
-                        <h2 class="text-xl font-semibold text-slate-700 border-b pb-2 mb-4">2. Dojo Waiver & Agreement</h2>
+                        <h2 class="text-xl font-semibold text-slate-700 border-b pb-2 mb-4">4. ELITE MARTIAL ARTS MEMBERSHIP AGREEMENT</h2>
                         <details>
-                            <summary class="text-blue-600 hover:underline">Click to Read Activity Waiver & Photo Release</summary>
+                            <summary class="text-blue-600 hover:underline">Click to Read Full Contract & Waiver</summary>
                             <div class="waiver-box">
-                                <strong>KARATE DOJO WAIVER AND RELEASE OF LIABILITY AGREEMENT</strong><br><br>
-                                <strong>ACKNOWLEDGEMENT OF RISK:</strong><br>
-                                I hereby acknowledge that participation in martial arts, including but not limited to, Karate, involves inherent risks of injury, including serious injury and death. These risks include, but are not limited to, those related to physical contact, sparring, falls, training techniques, and use of equipment.<br><br>
-                                <strong>ASSUMPTION OF RISK:</strong><br>
-                                I voluntarily agree to assume all risks and responsibility for any injury, illness, damage, or loss sustained by myself (and/or the minor participant listed below) as a result of participation in any activity or class offered by the Dojo, regardless of the severity.<br><br>
-                                <strong>RELEASE OF LIABILITY:</strong><br>
-                                I, for myself (and/or the minor participant), my heirs, executors, and assigns, forever release, waive, and discharge [Dojo Name] and its instructors, employees, and agents from any and all liability, claims, demands, actions, or causes of action arising out of any loss, damage, or injury, including death, that may be sustained by me or the minor participant while participating in or while on the premises of the Dojo, *notwithstanding any negligence on the part of the Dojo*.<br><br>
-                                <strong>PHOTO/VIDEO RELEASE:</strong><br>
-                                I grant the Dojo permission to take and use photographs, video recordings, or other images of me (and/or the minor participant) for promotional, marketing, or training purposes without further compensation.<br><br>
-                                <strong>GOVERNING LAW:</strong><br>
-                                This agreement shall be governed by the laws of the State of [Your State].<br><br>
-                                IN WITNESS WHEREOF, I have executed this Waiver and Release on the date of signature below.
+                                <strong>ELITE MARTIAL ARTS DOJO STUDENT MEMBERSHIP AGREEMENT</strong><br>
+                                Elite Martial Arts Dojo (E.M.A. Dojo) and its representatives provide Martial Arts instructions, including training and sparring. Each student represents that he/she is physically fit to participate in Martial Arts training and sparring classes and other instructions that may be requested. Each student is provided with the separate release of a liability statement that he/she (or legal guardian) has acknowledged and signed. In addition, each student agrees to faithfully comply with the rules and regulations of E.M.A. Dojo. E.M.A. Dojo reserves the right to terminate any student in its sole discretion, without notice, who does not comply with E.M.A. Dojo’s rules and regulations.<br><br>
+                                
+                                <strong>I. MEMBERSHIP AND TUITION AGREEMENT:</strong><br>
+                                1. It is understood that the student’s participation is on a month-to-month basis.<br>
+                                2. The program shall consist of two (2) lessons per week, not to exceed eight (8) lessons per month, at the monthly price of $139, based on the schedule offered by E.M.A. Dojo, which may change at the discretion of E.M.A. Dojo.<br>
+                                3. The first student’s fee is $139, after which the sibling(s) monthly fee is reduced to $119.<br>
+                                4. One lesson per week only is available at the monthly fee of $119.<br>
+                                5. EMA shall require payment upon enrollment for the first and last month of class as an initial payment.<br>
+                                6. EMA shall then debit your account on a month-to-month basis until notified that the student no longer wishes to participate in classes.<br>
+                                7. Upon timely notification that the student wishes to terminate membership with EMA, you will not be charged for the last month due to the credit received from the initial payment.<br>
+                                8. You must notify EMA 30 days prior to the student's termination to receive credit for the last month.<br>
+                                9. If we do not receive timely notification, EMA will continue to debit your account with the understanding that the student wishes to proceed with instruction.<br>
+                                10. You will nonetheless still receive the credit for the last month and be able to take classes during that time.<br>
+                                11. There are no partial refunds or pro-rated monthly fees.<br>
+                                12. It is the student’s responsibility to keep track of the class schedule. Each student is accountable for his/her own participation. The monthly fee paid is in the form of class membership, therefore, there are no refunds for missed or partial lessons.<br>
+                                13. You may cancel this agreement with a written notice of cancellation without any penalty or further obligation. Such notice is to be delivered to me in person and is available upon request.<br><br>
+                                
+                                <strong>II. FREEZE POLICY:</strong> We don’t freeze the account under any circumstances.<br><br>
+                                
+                                <strong>III. ELITE MARTIAL ARTS DOJO RELEASE AND WAIVER OF LIABILITY:</strong><br>
+                                In consideration of being enrolled in the Elite Martial Arts Dojo programs, the student (or legal guardian if under 18 years of age), agrees to the following: I inspected the facilities and equipment being used and I believe that they are safe.<br>
+                                
+                                <br>
+                                <strong>A. ACKNOWLEDGEMENT OF RISKS:</strong><br>
+                                I fully understand and acknowledge that:<br>
+                                1. There are risks and dangers associated with participation in all types of Martial Arts events and activities, which could result in bodily injury partial and/or total disability, paralysis and death.<br>
+                                2. The social economic losses and/or damages, which could result from these risks and dangers described above, could be severe.<br>
+                                3. These risks and dangers may be caused by the action, inaction or negligence of the participant or the action, inaction or negligence of others, including, but not limited to the E.M.A. Dojo’s employees, agents, representatives, successors and assigns.<br>
+                                4. There may be other risks not known or are not reasonably foreseeable at this time.<br>
+                                
+                                <br>
+                                <strong>B. ASSUMPTION OF RISK AND RELEASE:</strong><br>
+                                1. I accept and assume such risks and responsibility for the losses and/or damages following such injury, disability, paralysis or death, however caused and whether caused in whole or in part by the negligence of E.M.A. Dojo, its employees, agents, representatives, successors or assigns.<br>
+                                2. I represent and warrant to Elite Martial Arts Dojo that I am in good physical condition and have no medical reason or impairment that could prevent me from the intended participation in the Martial Arts training and sparring and I acknowledge that E.M.A. Dojo has not given me any medical advice before I joined the program related to my physical condition and/or ability to use the facilities and services of E.M.A. Dojo.<br>
+                                3. I acknowledge and agree that I will discuss any health or medical concerns with my physician or other health professional before joining the E.M.A. Dojo program or using its facilities.<br>
+                                4. I understand that the Elite Martial Arts Dojo Karate program includes FULL-CONTACT Karate. In addition, other disciplines are also practiced. They include, but not limited to: boxing, kickboxing, Jiu Jitsu, Mixed Martial Arts and wrestling.<br>
+                                5. I agree that if I engage in any Martial Arts training or sparring or use any equipment on the premises, I do so at my own risk and assume the risk of any and all injury or damage while engaging or resulting from such Martial Arts training or sparring or use.<br>
+                                6. My assumption of risk includes, without limitation, my use of any and all equipment.<br>
+                                7. I also agree to assume the risk in my participation of any Martial Arts activity, class or one-on-one instruction, or event.<br>
+                                8. I agree that I voluntarily participate in the aforementioned activities and assume all risk of injury, illness, damage, or loss to me or my property that might result, including, without limitation, any loss or theft of any personal property.<br>
+                                9. I agree on behalf of myself (and my personal representatives, heirs, executors, agents and assigns) to forever release and discharge E.M.A. Dojo (including, but not limited to E.M.A. Dojo employees, agents, representatives, successors, and assigns) from any and all claims or causes of action arising out of the negligence of E.M.A. Dojo, whether active or passive or any of the employees, agents, representatives, successors, and assigns.<br>
+                                10. By execution of this agreement, I agree to indemnify and hold E.M.A. Dojo harmless from any loss, liability, damage, or cost E.M.A. Dojo may incur due to my presence at the E.M.A. Dojo facility.<br><br>
+                                
+                                <strong>C. RELEASE AND WAIVER (FINAL ACKNOWLEDGMENT):</strong><br>
+                                1. I acknowledge that I have carefully read this waiver and release and fully understand that it is a release of liability, and express assumption of risk and indemnity agreement.<br>
+                                2. I am aware and agree that by executing this waiver and release, I am giving up my right to bring legal action or assert a claim against E.M.A. Dojo for its negligence or for any defective product on its premises.<br>
+                                3. I have read and voluntarily signed the waiver and release and further agree that no oral representation, statement, or inducement apart from the foregoing written agreement have been made.<br>
+                                4. I agree that the above representations are contractually binding.<br>
+                                5. I have read this Release and Waiver of Liability, assumption of risk and indemnity agreement, fully understand its terms, understand that I have given up substantial rights by signing it, and have signed it freely and voluntarily without any inducement, assurance, or guarantee being made to me and intend my signature to be complete and unconditional release of all liability to the greatest extent allowed by law.
                             </div>
                         </details>
                         <div class="mt-4">
                             <label class="flex items-center">
                                 <input type="checkbox" id="agree-waiver" name="agree-waiver" required class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                                <span class="ml-2 text-sm text-slate-700">I have read and agree to the terms for myself and any listed minors.</span>
+                                <span class="ml-2 text-sm text-slate-700">I have read and agree to all provisions of this agreement including the release and waiver for myself and any listed minors.</span>
                             </label>
                         </div>
                     </div>
 
+                    <!-- Section 5: Digital Signature -->
                     <div class="mb-8">
-                        <h2 class="text-xl font-semibold text-slate-700 border-b pb-2 mb-4">3. Signature</h2>
+                        <h2 class="text-xl font-semibold text-slate-700 border-b pb-2 mb-4">5. Digital Signature</h2>
                         <div class="bg-slate-50 p-2 rounded-lg">
                             <canvas id="signature-canvas"></canvas>
                         </div>
@@ -149,7 +245,7 @@
 
                     <div class="mt-8 text-center">
                         <button type="submit" id="submit-btn" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition-colors duration-300 focus:outline-none focus:ring-4 focus:ring-blue-300 disabled:bg-slate-400 disabled:cursor-not-allowed">
-                            Agree & Submit Waiver
+                            Agree & Submit Contract
                         </button>
                     </div>
                 </fieldset>
@@ -180,7 +276,7 @@
         const APP_ID = 'karate-dojo-waiver-app'; 
         const DEFAULT_BELT_ID = 'white-belt'; 
         
-        let db, auth; // Removed storage
+        let db, auth;
         let minorCount = 0;
 
         // --- 2. ELEMENT SELECTORS ---
@@ -199,8 +295,8 @@
             try {
                 // Compatibility layer initialization
                 const app = firebase.initializeApp(firebaseConfig);
-                db = app.firestore(); // Access Firestore via the compatibility object
-                auth = app.auth();     // Access Auth via the compatibility object
+                db = app.firestore();
+                auth = app.auth();
 
                 // Sign in anonymously for data writing permission
                 await auth.signInAnonymously();
@@ -224,18 +320,26 @@
                 <div class="mt-6 p-4 border rounded-lg bg-gray-50" id="minor-section-${minorCount}">
                     <h3 class="text-lg font-semibold text-slate-600 mb-4">Minor Student ${minorCount} Information (Under 18)</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        
+                        <!-- 1. Legal First Name (Required) -->
                         <div>
-                            <label for="first-name-minor-${minorCount}" class="block text-sm font-medium text-slate-600 mb-1">Preferred Name</label>
-                            <input type="text" id="first-name-minor-${minorCount}" name="first-name-minor-${minorCount}" required class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                            <label for="legal-first-name-minor-${minorCount}" class="block text-sm font-medium text-slate-600 mb-1">Legal First Name</label>
+                            <input type="text" id="legal-first-name-minor-${minorCount}" name="legal-first-name-minor-${minorCount}" required class="w-full px-4 py-2 border border-slate-300 rounded-lg">
                         </div>
+
+                        <!-- 2. Last Name -->
                         <div>
                             <label for="last-name-minor-${minorCount}" class="block text-sm font-medium text-slate-600 mb-1">Last Name</label>
                             <input type="text" id="last-name-minor-${minorCount}" name="last-name-minor-${minorCount}" required class="w-full px-4 py-2 border border-slate-300 rounded-lg">
                         </div>
+
+                        <!-- 3. Preferred Name (Optional, if different) -->
                         <div>
-                            <label for="legal-name-minor-${minorCount}" class="block text-sm font-medium text-slate-600 mb-1">Legal Name <span class="text-slate-400">(If Different)</span></label>
-                            <input type="text" id="legal-name-minor-${minorCount}" name="legal-name-minor-${minorCount}" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                            <label for="preferred-name-minor-${minorCount}" class="block text-sm font-medium text-slate-600 mb-1">Preferred Name <span class="text-slate-400">(If different from legal name)</span></label>
+                            <input type="text" id="preferred-name-minor-${minorCount}" name="preferred-name-minor-${minorCount}" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
                         </div>
+
+                        <!-- Birthday -->
                         <div>
                             <label for="birthday-minor-${minorCount}" class="block text-sm font-medium text-slate-600 mb-1">Birthday</label>
                             <input type="date" id="birthday-minor-${minorCount}" name="birthday-minor-${minorCount}" required class="w-full px-4 py-2 border border-slate-300 rounded-lg">
@@ -303,22 +407,38 @@
             const primaryPhoneNumber = formData.get('phone').replace(/\D/g, '');
             const primaryEmail = formData.get('email');
             
+            // Determine which name to use as the primary student/guardian name (Legal or Preferred)
+            const legalFirstName = formData.get('legal-first-name');
+            const preferredFirstName = formData.get('preferred-name') || legalFirstName;
+            const finalFirstName = preferredFirstName; 
+            const finalLegalName = legalFirstName; // Stored separately for legal purposes
+
             try {
                 // 1. Capture Signature Data URL (REPLACED STORAGE LOGIC)
                 const signatureDataURL = canvas.toDataURL('image/png');
 
                 // 2. Process Guardian (or Adult Student)
                 const adultData = {
-                    firstName: formData.get('first-name'),
+                    firstName: finalFirstName, // Preferred name used for CRM display
                     lastName: formData.get('last-name'),
-                    legalName: formData.get('legal-name') || '',
+                    legalName: finalLegalName, // Legal name stored as separate field
                     birthday: formData.get('birthday'),
                     email: primaryEmail,
                     phoneNumber: primaryPhoneNumber,
-                    isGuardian: minorCount > 0,
+                    // Check if any minors were added to determine if this person is a guardian
+                    isGuardian: minorCount > 0, 
                     waiverSigned: true,
                     signedAt: firebase.firestore.FieldValue.serverTimestamp(),
                     signatureData: signatureDataURL, // Storing Base64 data directly
+                    
+                    // Emergency Contacts
+                    emergencyNotify1Name: formData.get('emergency1-name') || '',
+                    emergencyNotify1Relationship: formData.get('emergency1-relationship') || '',
+                    emergencyNotify1Phone: formData.get('emergency1-phone') || '',
+                    emergencyNotify2Name: formData.get('emergency2-name') || '',
+                    emergencyNotify2Relationship: formData.get('emergency2-relationship') || '',
+                    emergencyNotify2Phone: formData.get('emergency2-phone') || '',
+
                     // Gamification/CRM Defaults
                     points: 0, 
                     beltRankId: DEFAULT_BELT_ID,
@@ -330,18 +450,31 @@
                 // 3. Process Minors
                 const minorPromises = [];
                 for (let i = 1; i <= minorCount; i++) {
+                    // Get minor's specific name fields
+                    const minorLegalFirstName = formData.get(`legal-first-name-minor-${i}`);
+                    const minorPreferredFirstName = formData.get(`preferred-name-minor-${i}`) || minorLegalFirstName;
+
                     const minorData = {
-                        firstName: formData.get(`first-name-minor-${i}`),
+                        firstName: minorPreferredFirstName, // Preferred name used for CRM display
                         lastName: formData.get(`last-name-minor-${i}`),
-                        legalName: formData.get(`legal-name-minor-${i}`) || '',
+                        legalName: minorLegalFirstName, // Legal name stored as separate field
                         birthday: formData.get(`birthday-minor-${i}`),
                         email: `${primaryEmail.split('@')[0]}+minor${i}@${primaryEmail.split('@')[1]}`, // Unique email for minors
                         phoneNumber: primaryPhoneNumber, // Same phone as guardian
                         isMinor: true,
+                        // Primary Guardian Name is the adult who filled out Section 1
+                        guardianName: `${adultData.firstName} ${adultData.lastName}`, 
                         guardianPhoneNumber: primaryPhoneNumber,
                         waiverSigned: true,
                         signedAt: firebase.firestore.FieldValue.serverTimestamp(),
                         signatureData: signatureDataURL, // Shared signature from guardian
+                        
+                        // Copy Emergency info from guardian for minor's document
+                        emergencyNotify1Name: adultData.emergencyNotify1Name,
+                        emergencyNotify1Phone: adultData.emergencyNotify1Phone,
+                        emergencyNotify2Name: adultData.emergencyNotify2Name,
+                        emergencyNotify2Phone: adultData.emergencyNotify2Phone,
+                        
                         // Gamification/CRM Defaults
                         points: 0,
                         beltRankId: DEFAULT_BELT_ID,
@@ -356,10 +489,10 @@
                 document.getElementById('app-container').innerHTML = `
                     <div class="text-center py-12">
                         <svg class="mx-auto h-12 w-12 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                        <h1 class="text-2xl font-bold text-slate-800 mt-4">Waiver Submitted!</h1>
+                        <h1 class="text-2xl font-bold text-slate-800 mt-4">Contract Submitted!</h1>
                         <p class="text-slate-600 mt-2">Your profile${minorCount > 0 ? 's' : ''} have been created. Welcome to the Dojo!</p>
                         <div class="mt-6">
-                            <a href="#" class="inline-block bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition-colors duration-300">Proceed to Check-In Kiosk</a>
+                            <a href="../check-in-kiosk/index.html" class="inline-block bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition-colors duration-300">Proceed to Check-In Kiosk</a>
                         </div>
                     </div>`;
 
@@ -367,7 +500,7 @@
                 console.error("Error during submission: ", error);
                 displayMessage(`An error occurred: ${error.message}. Please try again or contact staff.`, 'error');
                 submitBtn.disabled = false;
-                submitBtn.textContent = 'Agree & Submit Waiver';
+                submitBtn.textContent = 'Agree & Submit Contract';
             }
         });
 
@@ -376,7 +509,6 @@
             profileData.phoneNumber = profileData.phoneNumber.replace(/\D/g, '');
 
             // Check for existing profile (to prevent duplicate waiver records)
-            // CORRECTED: Access collection and methods via the global 'db' object
             const snapshot = await db.collection('students')
                                     .where('phoneNumber', '==', profileData.phoneNumber)
                                     .where('firstName', '==', profileData.firstName)
@@ -391,7 +523,9 @@
                 await existingDoc.ref.update({
                     waiverSigned: true,
                     signatureData: profileData.signatureData,
-                    signedAt: profileData.signedAt
+                    signedAt: profileData.signedAt,
+                    // Preserve existing points/belt if updating an existing student
+                    // unless a promotion happens in the CRM later.
                 });
             } else {
                 // Create new profile

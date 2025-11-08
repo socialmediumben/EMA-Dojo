@@ -1,0 +1,179 @@
+// --- IMPLEMENTATION INSTRUCTIONS ---
+// 1. Open your browser's developer console (F12 or Cmd+Option+J) on any of your Dojo HTML pages.
+// 2. Ensure your Firebase scripts are loaded (they are in your Intake form).
+// 3. Copy the entire contents of this file and paste it into the console, then press Enter.
+// 4. Check your Firestore 'students' collection to see the new data.
+// -----------------------------------
+
+const TEST_DATA_CONFIG = {
+    // NOTE: These must match the config in your HTML files
+    firebaseConfig: {
+        apiKey: "AIzaSyCuD0FvjxWfvQQglpDvN6cBQW0qOxqSR_Q",
+        authDomain: "ema-dojo.firebaseapp.com",
+        projectId: "ema-dojo",
+        storageBucket: "ema-dojo.firebasestorage.app",
+        messagingSenderId: "613830949475",
+        appId: "1:613830949475:web:fa18e5c7bf7892734c5656",
+        measurementId: "G-V2KPE07GT4"
+    },
+    DEFAULT_BELT_ID: 'white-belt',
+};
+
+// Function to simulate random emergency contact data
+function createEmergencyContact(baseName, phoneSuffix, relationship) {
+    return {
+        name: `${baseName} ${relationship}`,
+        relationship: relationship,
+        phone: `999555${phoneSuffix}`,
+    };
+}
+
+// Function to generate a simple mock base64 signature
+function generateMockSignature() {
+    // Mock signature data is stored as a small, invalid Base64 string for testing purposes.
+    // In a real application, this would be a full image data URL.
+    return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIwAAAABJRU5ErkJggg==';
+}
+
+// --- STRUCTURED TEST FAMILIES ---
+const testFamilies = [
+    { // Family 1: The Vegetable Family (Adult Guardian + 2 Minors)
+        adult: {
+            legalFirstName: 'Carrot',
+            lastName: 'Vegetables',
+            preferredName: 'Carry',
+            phoneNumber: '9995551111',
+            email: 'carrot@veg.test',
+            birthday: '1985-06-15',
+            emergency1: createEmergencyContact('Spinach', '1112', 'Aunt'),
+            emergency2: createEmergencyContact('Kale', '1113', 'Friend'),
+        },
+        minors: [
+            { legalFirstName: 'Broccoli', preferredName: 'Broc', birthday: '2012-03-20' },
+            { legalFirstName: 'Pea', preferredName: 'P.J.', birthday: '2015-09-01' },
+        ],
+    },
+    { // Family 2: The Color Family (Adult Student, No Minors)
+        adult: {
+            legalFirstName: 'Indigo',
+            lastName: 'Colors',
+            preferredName: 'Indy',
+            phoneNumber: '9995552222',
+            email: 'indigo@colors.test',
+            birthday: '1998-11-25',
+            emergency1: createEmergencyContact('Vermillion', '2223', 'Parent'),
+            emergency2: createEmergencyContact('Azure', '2224', 'Sibling'),
+        },
+        minors: [],
+    },
+    { // Family 3: The Planet Family (Adult Guardian + 1 Minor)
+        adult: {
+            legalFirstName: 'Saturn',
+            lastName: 'Planets',
+            preferredName: 'Goldie',
+            phoneNumber: '9995553333',
+            email: 'saturn@planets.test',
+            birthday: '1980-01-01',
+            emergency1: createEmergencyContact('Venus', '3334', 'Neighbor'),
+            emergency2: createEmergencyContact('Jupiter', '3335', 'Uncle'),
+        },
+        minors: [
+            { legalFirstName: 'Mercury', preferredName: 'Merc', birthday: '2010-07-07' },
+        ],
+    },
+];
+
+async function uploadTestData() {
+    console.log("Starting Firebase Test Data Upload...");
+
+    if (typeof firebase === 'undefined' || typeof firebase.firestore !== 'function') {
+        console.error("Firebase SDK not detected. Ensure firebase-app-compat and firebase-firestore-compat scripts are loaded.");
+        return;
+    }
+
+    try {
+        // 1. Initialize and Authenticate
+        const app = firebase.initializeApp(TEST_DATA_CONFIG.firebaseConfig, 'testApp'); // Use unique name
+        const db = app.firestore();
+        const auth = app.auth();
+        await auth.signInAnonymously();
+        console.log("Firebase initialized and authenticated anonymously for data writing.");
+
+        const studentCollection = db.collection('students');
+        const signatureDataURL = generateMockSignature();
+
+        let totalStudents = 0;
+
+        for (const family of testFamilies) {
+            const familyPromises = [];
+
+            // --- 2. Process Adult/Guardian ---
+            const adult = family.adult;
+            const adultData = {
+                firstName: adult.preferredName || adult.legalFirstName,
+                lastName: adult.lastName,
+                legalName: adult.legalFirstName,
+                birthday: adult.birthday,
+                email: adult.email,
+                phoneNumber: adult.phoneNumber.replace(/\D/g, ''),
+                isGuardian: family.minors.length > 0,
+                isMinor: false,
+                waiverSigned: true,
+                signedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                signatureData: signatureDataURL,
+                emergencyNotify1Name: adult.emergency1.name,
+                emergencyNotify1Relationship: adult.emergency1.relationship,
+                emergencyNotify1Phone: adult.emergency1.phone.replace(/\D/g, ''),
+                emergencyNotify2Name: adult.emergency2.name,
+                emergencyNotify2Relationship: adult.emergency2.relationship,
+                emergencyNotify2Phone: adult.emergency2.phone.replace(/\D/g, ''),
+                points: 0,
+                beltRankId: TEST_DATA_CONFIG.DEFAULT_BELT_ID,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            };
+
+            familyPromises.push(studentCollection.add(adultData));
+            totalStudents++;
+
+            // --- 3. Process Minors ---
+            for (let i = 0; i < family.minors.length; i++) {
+                const minor = family.minors[i];
+                const minorData = {
+                    firstName: minor.preferredName || minor.legalFirstName,
+                    lastName: adult.lastName, // Minors share the family last name
+                    legalName: minor.legalFirstName,
+                    birthday: minor.birthday,
+                    email: `${adult.email.split('@')[0]}+minor${i + 1}@${adult.email.split('@')[1]}`,
+                    phoneNumber: adult.phoneNumber.replace(/\D/g, ''),
+                    isMinor: true,
+                    guardianName: `${adult.preferredName} ${adult.lastName}`,
+                    guardianPhoneNumber: adult.phoneNumber.replace(/\D/g, ''),
+                    waiverSigned: true,
+                    signedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    signatureData: signatureDataURL,
+                    // Inherit emergency contacts from the guardian
+                    emergencyNotify1Name: adult.emergency1.name,
+                    emergencyNotify1Phone: adult.emergency1.phone.replace(/\D/g, ''),
+                    emergencyNotify2Name: adult.emergency2.name,
+                    emergencyNotify2Phone: adult.emergency2.phone.replace(/\D/g, ''),
+                    points: 0,
+                    beltRankId: TEST_DATA_CONFIG.DEFAULT_BELT_ID,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                };
+                familyPromises.push(studentCollection.add(minorData));
+                totalStudents++;
+            }
+
+            await Promise.all(familyPromises);
+            console.log(`Successfully added the ${adult.lastName} family (${familyPromises.length} profiles).`);
+        }
+
+        console.log(`--- Test Data Upload Complete! Added ${totalStudents} total student profiles. ---`);
+
+    } catch (error) {
+        console.error("Critical Error during data upload:", error);
+    }
+}
+
+// Execute the function
+uploadTestData();
