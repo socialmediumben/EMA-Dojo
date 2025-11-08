@@ -6,6 +6,10 @@
     <title>Dojo Check-In Kiosk</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Library for QR Code generation -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+
     <style>
         body { font-family: 'Inter', sans-serif; }
         .stage { display: none; }
@@ -16,6 +20,16 @@
         .customer-card.selected {
             border-color: #0891b2; /* cyan-600 */
             background-color: #ecfeff; /* cyan-50 */
+        }
+        /* Style for QR Code box */
+        #qr-code-container {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+            background-color: white;
+            border-radius: 0.5rem;
         }
     </style>
 </head>
@@ -32,11 +46,18 @@
                 <input type="tel" id="search-value" class="flex-grow block w-full px-4 py-3 text-2xl text-center text-gray-700 bg-white border border-gray-300 rounded-md" placeholder="e.g., 555-123-4567">
                 <button id="search-btn" class="px-8 py-3 text-white bg-cyan-600 rounded-md hover:bg-cyan-700 text-xl">Search</button>
             </div>
-            <div class="mt-6">
-                <p class="text-gray-500 mb-2">New student?</p>
-                <!-- NOTE: The initial link here should point to the correct path -->
+            
+            <div class="mt-8 border-t pt-6">
+                <p class="text-gray-500 font-semibold mb-3">New to the Dojo? Scan the QR code or tap the button to enroll!</p>
+                
+                <!-- QR Code Display -->
+                <div id="qr-code-container" class="mb-4">
+                    <canvas id="qr-canvas" class="w-48 h-48 border border-gray-300 rounded-lg"></canvas>
+                </div>
+                
+                <!-- Intake Form Link Button -->
                 <a href="../intake-form/index.html" target="_self" class="block w-full px-8 py-3 text-white bg-green-600 rounded-md hover:bg-green-700 text-xl">
-                    Sign the Waiver
+                    Fill out Intake Form
                 </a>
             </div>
         </div>
@@ -141,6 +162,25 @@
             }
         };
 
+        // --- QR Code Generation ---
+        const INTAKE_FORM_URL = "../intake-form/index.html";
+        
+        function generateQRCode() {
+            const canvas = document.getElementById('qr-canvas');
+            if (canvas) {
+                 // **FIXED LOGIC**: Use the absolute URL provided by the user for reliability.
+                 const absoluteUrl = 'https://ema-dojo.web.app/intake-form/index.html';
+                 
+                 QRCode.toCanvas(canvas, absoluteUrl, { 
+                     margin: 1, 
+                     width: 192, 
+                     color: { dark: '#0F172A', light: '#FFFFFF' } // Slate-900 / White
+                 }, function (error) {
+                    if (error) console.error("QR Code Generation Error:", error);
+                });
+            }
+        }
+
         // --- Initialization & Data Fetching ---
         async function fetchInitialData() {
             showLoader('Activating kiosk...');
@@ -156,6 +196,9 @@
                 // CORRECTED: Use compatibility methods for collection access and queries
                 const classSnapshot = await db.collection('classes').get();
                 classes = classSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                // Generate QR code once data is ready
+                generateQRCode();
 
                 showStage('search');
             } catch (error) {
@@ -176,8 +219,6 @@
         const getStudentWaiverStatus = (student) => {
             return student.waiverSigned === true;
         };
-
-        const INTAKE_FORM_URL = "../intake-form/index.html";
 
         const searchStudents = async () => {
             if (!db) return;
@@ -227,6 +268,7 @@
             const p = document.querySelector('#stage-2-results p');
             h1.textContent = 'No Profile Found';
             p.textContent = "The number entered does not match an active student profile.";
+            // Keep the Intake Form link for the scenario where no students are found
             resultsList.innerHTML = `<p class="text-gray-500 text-center p-4 text-xl">Is this your first time checking in?</p><a href="${INTAKE_FORM_URL}" target="_self" class="block w-full mt-4 px-8 py-4 text-white bg-green-600 rounded-md hover:bg-green-700 text-xl">Fill out Intake Form</a>`;
             checkInSelectedBtn.style.display = 'none';
         };
@@ -436,7 +478,7 @@
         });
 
         // --- Start the application ---
-        fetchInitialData();
+        document.addEventListener('DOMContentLoaded', fetchInitialData);
     </script>
     <!-- Include Firebase Compatibility SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-app-compat.js"></script>
