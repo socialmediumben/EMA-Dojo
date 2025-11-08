@@ -34,7 +34,8 @@
             </div>
             <div class="mt-6">
                 <p class="text-gray-500 mb-2">New student?</p>
-                <a href="./customer_intake_form/index.html" target="_self" class="block w-full px-8 py-3 text-white bg-green-600 rounded-md hover:bg-green-700 text-xl">
+                <!-- NOTE: The initial link here should point to the correct path -->
+                <a href="../intake-form/index.html" target="_self" class="block w-full px-8 py-3 text-white bg-green-600 rounded-md hover:bg-green-700 text-xl">
                     Sign the Waiver
                 </a>
             </div>
@@ -176,6 +177,8 @@
             return student.waiverSigned === true;
         };
 
+        const INTAKE_FORM_URL = "../intake-form/index.html";
+
         const searchStudents = async () => {
             if (!db) return;
             const searchValue = document.getElementById('search-value').value.trim();
@@ -192,7 +195,8 @@
                 searchedStudents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
                 if (searchedStudents.length === 0) {
-                    displayStudentResults([]);
+                    // Scenario 2: No students found for this number
+                    displayNoResults();
                     showStage('results');
                     return;
                 }
@@ -205,7 +209,7 @@
                     const p = document.querySelector('#stage-2-results p');
                     h1.textContent = 'Waiver Required';
                     p.textContent = `One or more profiles linked to this number needs to complete the waiver.`;
-                    resultsList.innerHTML = `<a href="./customer_intake_form/index.html" target="_self" class="block w-full px-8 py-4 text-white bg-green-600 rounded-md hover:bg-green-700 text-xl">Sign the Waiver</a>`;
+                    resultsList.innerHTML = `<a href="${INTAKE_FORM_URL}" target="_self" class="block w-full px-8 py-4 text-white bg-green-600 rounded-md hover:bg-green-700 text-xl">Sign the Waiver</a>`;
                     checkInSelectedBtn.style.display = 'none';
                     showStage('results');
                 } else {
@@ -218,6 +222,15 @@
             }
         };
         
+        const displayNoResults = () => {
+             const h1 = document.querySelector('#stage-2-results h1');
+            const p = document.querySelector('#stage-2-results p');
+            h1.textContent = 'No Profile Found';
+            p.textContent = "The number entered does not match an active student profile.";
+            resultsList.innerHTML = `<p class="text-gray-500 text-center p-4 text-xl">Is this your first time checking in?</p><a href="${INTAKE_FORM_URL}" target="_self" class="block w-full mt-4 px-8 py-4 text-white bg-green-600 rounded-md hover:bg-green-700 text-xl">Fill out Intake Form</a>`;
+            checkInSelectedBtn.style.display = 'none';
+        };
+
         const displayStudentResults = (students) => {
             const h1 = document.querySelector('#stage-2-results h1');
             const p = document.querySelector('#stage-2-results p');
@@ -230,8 +243,8 @@
             checkInSelectedBtn.disabled = true;
 
             if (students.length === 0) {
-                resultsList.innerHTML = `<p class="text-gray-500 text-center p-4 text-xl">No students found with that number.</p><a href="./customer_intake_form/index.html" target="_self" class="block w-full mt-4 px-8 py-4 text-white bg-green-600 rounded-md hover:bg-green-700 text-xl">Sign the Waiver</a>`;
-                checkInSelectedBtn.style.display = 'none';
+                // This case should be handled by displayNoResults, but kept here as a fallback
+                displayNoResults(); 
                 return;
             }
 
@@ -308,13 +321,20 @@
         const proceedWithCheckIn = async () => {
             if (selectedStudents.length === 0) return;
             
-            showLoader('Determining current class...');
+            showLoader('Processing check-in...');
 
-            const currentClass = findCurrentClass();
+            let currentClass = findCurrentClass();
+            
+            // Scenario 1: No class currently scheduled -> use 'Other' fallback
             if (!currentClass) {
-                showError("No class is currently in session. Please check your schedule.");
-                return;
+                console.log("No scheduled class found. Using 'Other (Unscheduled)' fallback.");
+                currentClass = {
+                    id: 'other-unscheduled',
+                    name: 'Other (Unscheduled)',
+                    pointValue: 1, // Award 1 point for unscheduled check-in
+                };
             }
+
 
             const checkInPromises = selectedStudents.map(student => 
                 performStudentCheckIn(student, currentClass)
